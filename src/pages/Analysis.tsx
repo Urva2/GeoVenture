@@ -38,7 +38,7 @@ export default function Analysis() {
   const { location, businessType, analysis } = state;
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background animate-in fade-in duration-500">
       {/* Header */}
       <div className="h-16 shrink-0 border-b border-border">
         <AnalysisHeader location={location} />

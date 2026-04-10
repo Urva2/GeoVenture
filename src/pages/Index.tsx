@@ -20,14 +20,16 @@ export default function Index() {
   }, []);
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background animate-in fade-in duration-500">
       {/* Navbar */}
       <header className="h-12 shrink-0 bg-card flex items-center justify-between px-5 border-b border-border z-50 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-bold">S</span>
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-sm">
+            <span className="text-primary-foreground text-[10px] font-black tracking-tighter">GV</span>
           </div>
-          <span className="text-foreground font-bold text-sm tracking-wide">SiteIQ</span>
+          <span className="font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">
+            Geo<span className="text-primary">Venture</span>
+          </span>
         </div>
       </header>
 

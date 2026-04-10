@@ -87,6 +87,22 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
           </p>
         </div>
       )}
+
+      {/* Full Screen Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            <div className="w-20 h-20 bg-card border border-border shadow-2xl rounded-2xl flex items-center justify-center relative z-10">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Analyzing Location...</h2>
+          <p className="text-sm text-muted-foreground max-w-sm text-center">
+            Processing geospatial data and generating insights
+          </p>
+        </div>
+      )}
     </div>
   );
 }
