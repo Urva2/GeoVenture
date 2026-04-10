@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import MapPanel from "@/components/MapPanel";
 import SidebarPanel from "@/components/SidebarPanel";
+import UserDropdown from "@/components/UserDropdown";
 
 export default function Index() {
   const [clickedLocation, setClickedLocation] = useState<[number, number] | null>(null);
@@ -29,7 +30,10 @@ export default function Index() {
           </div>
           <span className="text-foreground font-bold text-sm tracking-wide">SiteIQ</span>
         </div>
-        <span className="text-muted-foreground text-xs hidden sm:block">AI-Powered Location Intelligence</span>
+        <div className="flex items-center gap-4">
+          <span className="text-muted-foreground text-xs hidden sm:block">AI-Powered Location Intelligence</span>
+          <UserDropdown />
+        </div>
       </header>
 
       {/* Main Content */}
