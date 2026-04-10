@@ -1,28 +1,29 @@
 import { useState } from "react";
-import { BUSINESS_TYPES, generateAnalysis, type AnalysisResult } from "@/lib/analysis";
-import ScoreCard from "./ScoreCard";
-import FactorBreakdown from "./FactorBreakdown";
-import SuggestionsPanel from "./SuggestionsPanel";
-import MiniDashboard from "./MiniDashboard";
+import { useNavigate } from "react-router-dom";
+import { BUSINESS_TYPES, generateAnalysis } from "@/lib/analysis";
 import { Loader2, MapPin, Search } from "lucide-react";
 
 interface SidebarPanelProps {
   clickedLocation: [number, number] | null;
-  onJumpToLocation: (lat: number, lng: number) => void;
 }
 
-export default function SidebarPanel({ clickedLocation, onJumpToLocation }: SidebarPanelProps) {
+export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
+  const navigate = useNavigate();
   const [businessType, setBusinessType] = useState("cafe");
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
 
   const handleAnalyze = () => {
     if (!clickedLocation) return;
     setIsLoading(true);
-    setResult(null);
     setTimeout(() => {
       const r = generateAnalysis(clickedLocation[0], clickedLocation[1], businessType);
-      setResult(r);
+      navigate("/analysis", {
+        state: {
+          location: clickedLocation,
+          businessType,
+          analysis: r,
+        },
+      });
       setIsLoading(false);
     }, 1500);
   };
@@ -75,7 +76,7 @@ export default function SidebarPanel({ clickedLocation, onJumpToLocation }: Side
       </div>
 
       {/* Empty State */}
-      {!result && !isLoading && (
+      {!isLoading && (
         <div className="flex flex-col items-center justify-center text-center py-16 opacity-60">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <MapPin className="h-8 w-8 text-primary" />
@@ -85,16 +86,6 @@ export default function SidebarPanel({ clickedLocation, onJumpToLocation }: Side
             Select a location and business type to generate your site intelligence report
           </p>
         </div>
-      )}
-
-      {/* Results */}
-      {result && (
-        <>
-          <ScoreCard score={result.score} />
-          <FactorBreakdown factors={result.factors} />
-          <MiniDashboard result={result} />
-          <SuggestionsPanel result={result} onJumpToLocation={onJumpToLocation} />
-        </>
       )}
     </div>
   );

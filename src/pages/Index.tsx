@@ -46,10 +46,7 @@ export default function Index() {
 
         {/* Sidebar - 35% */}
         <div className="w-[35%] h-full border-l border-border">
-          <SidebarPanel
-            clickedLocation={clickedLocation}
-            onJumpToLocation={handleJumpToLocation}
-          />
+          <SidebarPanel clickedLocation={clickedLocation} />
         </div>
       </div>
     </div>
