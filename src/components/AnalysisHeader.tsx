@@ -6,15 +6,13 @@ import { useNavigate } from "react-router-dom";
 
 interface AnalysisHeaderProps {
   location: [number, number];
-  businessType: string;
-  score: number;
 }
 
-export default function AnalysisHeader({ location, businessType, score }: AnalysisHeaderProps) {
+export default function AnalysisHeader({ location }: AnalysisHeaderProps) {
   const navigate = useNavigate();
 
   return (
-    <Card className="flex items-center justify-between p-4 bg-card border-border">
+    <Card className="flex items-center justify-between p-4 bg-card border-border rounded-none border-x-0 border-t-0 shadow-none">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -36,17 +34,6 @@ export default function AnalysisHeader({ location, businessType, score }: Analys
               {location[0].toFixed(4)}, {location[1].toFixed(4)}
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Overall Score</p>
-          <p className="text-2xl font-bold text-foreground">{score}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Business Type</p>
-          <p className="text-sm font-semibold text-foreground capitalize">{businessType}</p>
         </div>
       </div>
     </Card>

@@ -29,7 +29,6 @@ export default function Index() {
           </div>
           <span className="text-foreground font-bold text-sm tracking-wide">SiteIQ</span>
         </div>
-        <span className="text-muted-foreground text-xs hidden sm:block">AI-Powered Location Intelligence</span>
       </header>
 
       {/* Main Content */}

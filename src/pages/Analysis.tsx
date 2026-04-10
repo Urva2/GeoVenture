@@ -1,8 +1,9 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AnalysisHeader from "@/components/AnalysisHeader";
+import AnalysisSummary from "@/components/AnalysisSummary";
 import TopFactors from "@/components/TopFactors";
-import TechnicalParametersTable from "@/components/TechnicalParametersTable";
+import BusinessComparison from "@/components/BusinessComparison";
 import AnalysisMap from "@/components/AnalysisMap";
 import { type AnalysisResult } from "@/lib/analysis";
 
@@ -40,26 +41,30 @@ export default function Analysis() {
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
       {/* Header */}
       <div className="h-16 shrink-0 border-b border-border">
-        <AnalysisHeader location={location} businessType={businessType} score={analysis.score} />
+        <AnalysisHeader location={location} />
       </div>
 
       {/* Main Content */}
       <div className="flex flex-1 min-h-0 gap-4 p-4">
-        {/* Left Panel - Top Factors (35%) */}
-        <div className="w-[35%] min-h-0">
-          <TopFactors factors={analysis.factors} businessType={businessType} />
+        {/* Left Panel - Summary + Top Factors (35%) */}
+        <div className="w-[35%] flex flex-col gap-4 min-h-0">
+          <AnalysisSummary businessType={businessType} score={analysis.score} />
+          
+          <div className="flex-1 min-h-0">
+            <TopFactors factors={analysis.factors} businessType={businessType} />
+          </div>
         </div>
 
-        {/* Right Panel - Map (40%) and Technical Parameters (25%) */}
+        {/* Right Panel - Map (40%) and Business Comparison (25%) */}
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           {/* Map */}
           <div className="flex-1 min-h-0">
             <AnalysisMap location={location} businessType={businessType} />
           </div>
 
-          {/* Technical Parameters */}
+          {/* Business Comparison */}
           <div className="flex-1 min-h-0">
-            <TechnicalParametersTable />
+            <BusinessComparison />
           </div>
         </div>
       </div>
