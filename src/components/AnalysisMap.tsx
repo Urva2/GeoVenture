@@ -41,6 +41,11 @@ function MapController({ center, zoom }: { center: [number, number]; zoom: numbe
   return null;
 }
 
+const INDIA_BOUNDS: L.LatLngBoundsExpression = [
+  [6.5, 68.1], // Southwest coordinates of India
+  [35.5, 97.4] // Northeast coordinates of India
+];
+
 export default function AnalysisMap({ location, businessType }: AnalysisMapProps) {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,6 +72,9 @@ export default function AnalysisMap({ location, businessType }: AnalysisMapProps
           // so the user actually sees the flyTo animation. We'll start at the location but zoom=7
           center={[location[0], location[1]]}
           zoom={7}
+          minZoom={5}
+          maxBounds={INDIA_BOUNDS}
+          maxBoundsViscosity={1.0}
           style={{ height: "100%", width: "100%" }}
           zoomControl={true}
         >
@@ -75,7 +83,7 @@ export default function AnalysisMap({ location, businessType }: AnalysisMapProps
             attribution='&copy; OpenStreetMap contributors'
           />
           <MapController center={[location[0], location[1]]} zoom={15} />
-          
+
           <Marker position={[location[0], location[1]]} icon={defaultIcon}>
             <Popup>
               <div className="text-xs">

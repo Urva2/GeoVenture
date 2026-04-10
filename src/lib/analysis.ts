@@ -20,14 +20,14 @@ export interface AnalysisResult {
 }
 
 const BUSINESS_TYPES = [
-  { value: "cafe", label: "Cafe / Coffee Shop", icon: "☕" },
-  { value: "ev", label: "EV Charging Station", icon: "⚡" },
-  { value: "convenience", label: "Convenience Store", icon: "🏪" },
-  { value: "warehouse", label: "Warehouse / Logistics Hub", icon: "🏭" },
-  { value: "restaurant", label: "Restaurant / QSR", icon: "🍕" },
-  { value: "pharmacy", label: "Pharmacy / Clinic", icon: "🏥" },
-  { value: "retail", label: "Retail Boutique", icon: "🛍️" },
-  { value: "gym", label: "Gym / Fitness Studio", icon: "🏋️" },
+  { value: "cafe", label: "Cafe / Coffee Shop", icon: "" },
+  { value: "ev", label: "EV Charging Station", icon: "" },
+  { value: "convenience", label: "Convenience Store", icon: "" },
+  { value: "warehouse", label: "Warehouse / Logistics Hub", icon: "" },
+  { value: "restaurant", label: "Restaurant / QSR", icon: "" },
+  { value: "pharmacy", label: "Pharmacy / Clinic", icon: "" },
+  { value: "retail", label: "Retail Boutique", icon: "" },
+  { value: "gym", label: "Gym / Fitness Studio", icon: "" },
 ];
 
 export { BUSINESS_TYPES };
@@ -47,11 +47,11 @@ export function generateAnalysis(lat: number, lng: number, businessType: string)
   const purchasing = Math.floor(pseudoRandom(seed1 + 2) * 55 + 35);
 
   const factors = [
-    { label: "Population Density", icon: "🏘️", value: pop },
-    { label: "Road & Transit Access", icon: "🛣️", value: transit },
-    { label: "Competition Index", icon: "🏪", value: competition, inverted: true },
-    { label: "Risk Score", icon: "⚠️", value: risk, inverted: true },
-    { label: "Purchasing Power", icon: "💰", value: purchasing },
+    { label: "Population Density", icon: "", value: pop },
+    { label: "Road & Transit Access", icon: "", value: transit },
+    { label: "Competition Index", icon: "", value: competition, inverted: true },
+    { label: "Risk Score", icon: "", value: risk, inverted: true },
+    { label: "Purchasing Power", icon: "", value: purchasing },
   ];
 
   const effectiveScores = factors.map(f => f.inverted ? 100 - f.value : f.value);
