@@ -9,7 +9,7 @@ interface BusinessComparisonItem {
 }
 
 const MOCK_BUSINESSES: BusinessComparisonItem[] = [
-  { name: "Café", score: 88 },
+  { name: "Cafe", score: 88 },
   { name: "EV Charging Station", score: 76 },
   { name: "Restaurant", score: 65 },
   { name: "Retail Store", score: 52 },
@@ -60,9 +60,6 @@ export default function BusinessComparison() {
       <div className="p-5 border-b border-border/50 bg-muted/20">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-base font-bold text-foreground leading-tight">Business Comparison</h2>
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-medium">
-            AI Matched
-          </Badge>
         </div>
         <p className="text-[11px] text-muted-foreground">
           Alternative business types ranked by suitability for this location
@@ -103,22 +100,22 @@ export default function BusinessComparison() {
                     {business.name}
                   </span>
                 </div>
-                
+
                 <div className="col-span-4 flex flex-col justify-center">
                   <div className="flex items-center gap-2">
-                     {/* Made track darker using black/10 & thicker h-2 */}
-                     <div className="flex-1 h-2 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">
-                       <div
-                         className={`h-full bg-gradient-to-r ${styles.bar} rounded-full`}
-                         style={{ width: `${business.score}%` }}
-                       />
-                     </div>
-                     <span className={`text-sm font-black ${styles.text} w-7 text-right`}>
-                       {business.score}
-                     </span>
+                    {/* Made track darker using black/10 & thicker h-2 */}
+                    <div className="flex-1 h-2 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className={`h-full bg-gradient-to-r ${styles.bar} rounded-full`}
+                        style={{ width: `${business.score}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-black ${styles.text} w-7 text-right`}>
+                      {business.score}
+                    </span>
                   </div>
                 </div>
-                
+
                 <div className="col-span-3 flex items-center justify-end">
                   <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${styles.badge}`}>
                     {styles.icon}

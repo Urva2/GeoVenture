@@ -20,7 +20,7 @@ export interface AnalysisResult {
 }
 
 const BUSINESS_TYPES = [
-  { value: "cafe", label: "Café / Coffee Shop", icon: "☕" },
+  { value: "cafe", label: "Cafe / Coffee Shop", icon: "☕" },
   { value: "ev", label: "EV Charging Station", icon: "⚡" },
   { value: "convenience", label: "Convenience Store", icon: "🏪" },
   { value: "warehouse", label: "Warehouse / Logistics Hub", icon: "🏭" },
