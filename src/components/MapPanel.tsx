@@ -57,8 +57,8 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
   return (
     <div className="relative h-full w-full">
       <MapContainer
-        center={[40.7128, -74.006]}
-        zoom={13}
+        center={[20.5937, 78.9629]}
+        zoom={5}
         zoomControl={true}
         className="h-full w-full"
         attributionControl={false}
