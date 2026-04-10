@@ -20,17 +20,22 @@ export default function Index() {
   }, []);
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background">
       {/* Navbar */}
-      <header className="h-12 shrink-0 bg-navbar flex items-center justify-between px-5 border-b border-border z-50">
-        <span className="text-foreground font-bold text-sm tracking-wide">◆ SiteIQ</span>
+      <header className="h-12 shrink-0 bg-card flex items-center justify-between px-5 border-b border-border z-50 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-xs font-bold">S</span>
+          </div>
+          <span className="text-foreground font-bold text-sm tracking-wide">SiteIQ</span>
+        </div>
         <span className="text-muted-foreground text-xs hidden sm:block">AI-Powered Location Intelligence</span>
       </header>
 
       {/* Main Content */}
       <div className="flex flex-1 min-h-0">
-        {/* Map - 60% */}
-        <div className="w-[60%] h-full">
+        {/* Map - 65% */}
+        <div className="w-[65%] h-full">
           <MapPanel
             onLocationClick={handleLocationClick}
             clickedLocation={clickedLocation}
@@ -39,8 +44,8 @@ export default function Index() {
           />
         </div>
 
-        {/* Sidebar - 40% */}
-        <div className="w-[40%] h-full border-l border-border">
+        {/* Sidebar - 35% */}
+        <div className="w-[35%] h-full border-l border-border">
           <SidebarPanel
             clickedLocation={clickedLocation}
             onJumpToLocation={handleJumpToLocation}

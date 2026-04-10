@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMapEvents, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -63,7 +63,7 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
         className="h-full w-full"
         attributionControl={false}
       >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
         <ClickHandler onClick={handleClick} />
         {panTarget && <PanTo center={panTarget} />}
 
@@ -73,7 +73,7 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
 
         {showBetter && betterLocation && (
           <Marker position={betterLocation} icon={createRecommendedIcon()}>
-            <Tooltip permanent direction="top" offset={[0, -14]} className="!bg-card !text-foreground !border-border !rounded-lg !text-xs !px-2 !py-1">
+            <Tooltip permanent direction="top" offset={[0, -14]} className="!bg-card !text-foreground !border-border !rounded-lg !text-xs !px-2 !py-1 !shadow-md">
               ✦ Recommended Location
             </Tooltip>
           </Marker>
@@ -81,13 +81,13 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
       </MapContainer>
 
       {showHint && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-card/90 backdrop-blur-sm text-muted-foreground text-sm px-4 py-2 rounded-lg border border-border">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-card/95 backdrop-blur-sm text-muted-foreground text-sm px-4 py-2 rounded-lg border border-border shadow-md">
           Click anywhere to analyze
         </div>
       )}
 
       {clickedLocation && (
-        <div className="absolute bottom-4 left-4 z-[1000] bg-card/90 backdrop-blur-sm text-foreground text-xs font-mono px-3 py-2 rounded-lg border border-border">
+        <div className="absolute bottom-4 left-4 z-[1000] bg-card/95 backdrop-blur-sm text-foreground text-xs font-mono px-3 py-2 rounded-lg border border-border shadow-sm">
           📍 {clickedLocation[0].toFixed(4)}, {clickedLocation[1].toFixed(4)}
         </div>
       )}
