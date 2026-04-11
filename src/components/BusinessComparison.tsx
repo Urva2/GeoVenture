@@ -1,22 +1,63 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, AlertCircle, Trophy } from "lucide-react";
+import { BUSINESS_TYPES, generateAnalysis } from "@/lib/analysis";
 
 interface BusinessComparisonItem {
   name: string;
   score: number;
+  isSearched?: boolean;
 }
 
-const MOCK_BUSINESSES: BusinessComparisonItem[] = [
-  { name: "Cafe", score: 88 },
-  { name: "EV Charging Station", score: 76 },
-  { name: "Restaurant", score: 65 },
-  { name: "Retail Store", score: 52 },
-  { name: "Warehouse", score: 34 },
-].sort((a, b) => b.score - a.score);
+interface BusinessComparisonProps {
+  searchedBusinessValue?: string;
+  searchedScore?: number;
+  location?: [number, number];
+}
 
-export default function BusinessComparison() {
+export default function BusinessComparison({
+  searchedBusinessValue = "",
+  searchedScore = 0,
+  location = [0, 0]
+}: BusinessComparisonProps = {}) {
+  
+  const dynamicBusinesses = useMemo(() => {
+    // Generate true, mathematically consistent scores for ALL business types at this location
+    const allBusinesses = BUSINESS_TYPES.map(b => {
+      const isSearched = b.value === searchedBusinessValue;
+      // If it's the one currently being searched, use the supplied score to guarantee consistency.
+      // Otherwise, simulate what its score would be if it were searched.
+      const score = (isSearched && searchedScore > 0) 
+        ? searchedScore 
+        : generateAnalysis(location[0], location[1], b.value).score;
+
+      return {
+        name: b.label,
+        score,
+        isSearched
+      };
+    });
+
+    // Sort all businesses by score descending
+    allBusinesses.sort((a, b) => b.score - a.score);
+
+    // Take top 5 for comparison
+    let top5 = allBusinesses.slice(0, 5);
+
+    // If the searched business didn't make the top 5, swap it in so the user can compare it
+    const searchedInTop5 = top5.some(b => b.isSearched);
+    if (!searchedInTop5 && searchedBusinessValue) {
+      const searchedItem = allBusinesses.find(b => b.isSearched);
+      if (searchedItem) {
+        top5 = allBusinesses.slice(0, 4);
+        top5.push(searchedItem);
+        top5.sort((a, b) => b.score - a.score); // Resort with the swapped item
+      }
+    }
+
+    return top5;
+  }, [searchedBusinessValue, searchedScore, location]);
   const getStatus = (score: number) => {
     if (score >= 80) return "Recommended";
     if (score >= 50) return "Moderate";
@@ -80,7 +121,7 @@ export default function BusinessComparison() {
 
         {/* Table Rows Container */}
         <div className="px-4 pb-4 space-y-2.5">
-          {MOCK_BUSINESSES.map((business, idx) => {
+          {dynamicBusinesses.map((business, idx) => {
             const isBest = idx === 0;
             const styles = getStatusStyles(business.score);
             const statusLabel = getStatus(business.score);

@@ -59,7 +59,11 @@ export default function Analysis() {
 
           {/* Business Comparison */}
           <div className="flex-[2] min-h-0">
-            <BusinessComparison />
+            <BusinessComparison 
+              searchedBusinessValue={businessType} 
+              searchedScore={analysis.score} 
+              location={location} 
+            />
           </div>
         </div>
       </div>
