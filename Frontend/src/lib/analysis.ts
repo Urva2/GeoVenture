@@ -20,14 +20,20 @@ export interface AnalysisResult {
 }
 
 const BUSINESS_TYPES = [
-  { value: "cafe", label: "Cafe / Coffee Shop", icon: "" },
-  { value: "ev", label: "EV Charging Station", icon: "" },
-  { value: "convenience", label: "Convenience Store", icon: "" },
-  { value: "warehouse", label: "Warehouse / Logistics Hub", icon: "" },
-  { value: "restaurant", label: "Restaurant / QSR", icon: "" },
-  { value: "pharmacy", label: "Pharmacy / Clinic", icon: "" },
-  { value: "retail", label: "Retail Boutique", icon: "" },
-  { value: "gym", label: "Gym / Fitness Studio", icon: "" },
+  { value: "accomodation", label: "Accomodation", icon: "" },
+  { value: "culture", label: "Culture & Arts", icon: "" },
+  { value: "education", label: "Education", icon: "" },
+  { value: "finance", label: "Finance & Banking", icon: "" },
+  { value: "food", label: "Food & Beverage", icon: "" },
+  { value: "health", label: "Health & Medical", icon: "" },
+  { value: "infra", label: "Infrastructure", icon: "" },
+  { value: "other", label: "Other", icon: "" },
+  { value: "outdoor", label: "Outdoor & Recreation", icon: "" },
+  { value: "public_service", label: "Public Service", icon: "" },
+  { value: "retail", label: "Retail", icon: "" },
+  { value: "sports", label: "Sports Facilities", icon: "" },
+  { value: "transport", label: "Transport & Logistics", icon: "" },
+  { value: "utility", label: "Utilities", icon: "" },
 ];
 
 export { BUSINESS_TYPES };

@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 import h3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 # Initialize the FastAPI application
 app = FastAPI(title="GeoVenture API", description="Backend for location intelligence", version="1.0.0", docs_url=None)
@@ -15,6 +17,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---- DATABASE CONNECTION SETUP ----
+# This is a FastAPI Dependency. It opens a connection when an API is called,
+# and safely closes it automatically when the API finishes to prevent database crashes.
+def get_db():
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host="localhost",
+            database="Geo-Venture",       # <-- Change to your PostgreSQL database name
+            user="postgres",         # <-- Change to your PostgreSQL username
+            password="Urv@3214", # <-- Change to your PostgreSQL password
+            port="5432"
+        )
+        # Yield gives the connection to the API route, then pauses.
+        print("sdflkdjfsjskfldjkjljl")
+        yield conn
+    except Exception as e:
+        print(f"❌ Database Connection Error: {e}")
+        raise e
+    finally:
+        # This guarantees the connection always closes, even if your API crashes!
+        if conn:
+            conn.close()
+
 
 # ---- HERE is where you will write your API functions ----
 
@@ -77,34 +104,104 @@ async def custom_swagger_ui_html():
 def read_root():
     return {"message": "Welcome to GeoVenture Backend API!"}
 
+CATEGORY_WEIGHTS = {
+    #                                Road,  POFW,  Transport, Traffic, POI,   Population
+    "accomodation":   {"road": 0.20, "pofw": 0.05, "transport": 0.20, "traffic": 0.10, "poi": 0.30, "pop": 0.15},
+    "culture":        {"road": 0.15, "pofw": 0.05, "transport": 0.25, "traffic": 0.10, "poi": 0.25, "pop": 0.20},
+    "education":      {"road": 0.15, "pofw": 0.05, "transport": 0.25, "traffic": 0.10, "poi": 0.15, "pop": 0.30},
+    "finance":        {"road": 0.15, "pofw": 0.05, "transport": 0.20, "traffic": 0.15, "poi": 0.30, "pop": 0.15},
+    "food":           {"road": 0.20, "pofw": 0.05, "transport": 0.15, "traffic": 0.20, "poi": 0.25, "pop": 0.15},
+    "health":         {"road": 0.25, "pofw": 0.05, "transport": 0.25, "traffic": 0.10, "poi": 0.10, "pop": 0.25},
+    "infra":          {"road": 0.30, "pofw": 0.20, "transport": 0.30, "traffic": 0.10, "poi": 0.05, "pop": 0.05},
+    "other":          {"road": 0.15, "pofw": 0.05, "transport": 0.20, "traffic": 0.20, "poi": 0.20, "pop": 0.20},
+    "outdoor":        {"road": 0.15, "pofw": 0.30, "transport": 0.15, "traffic": 0.05, "poi": 0.15, "pop": 0.20},
+    "public_service": {"road": 0.20, "pofw": 0.05, "transport": 0.20, "traffic": 0.15, "poi": 0.15, "pop": 0.25},
+    "retail":         {"road": 0.20, "pofw": 0.05, "transport": 0.15, "traffic": 0.20, "poi": 0.20, "pop": 0.20},
+    "sports":         {"road": 0.20, "pofw": 0.05, "transport": 0.15, "traffic": 0.10, "poi": 0.20, "pop": 0.30},
+    "transport":      {"road": 0.40, "pofw": 0.05, "transport": 0.25, "traffic": 0.20, "poi": 0.05, "pop": 0.05},
+    "utility":        {"road": 0.25, "pofw": 0.20, "transport": 0.20, "traffic": 0.10, "poi": 0.05, "pop": 0.20},
+}
+
 @app.get("/api/analyze")
-def analyze_location(lat: float, lng: float, business_type: str = "cafe"):
+def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = Depends(get_db)):
     """
-    Example API endpoint that receives coordinates and returns an analysis.
+    Core API endpoint that calculates ML suitability dynamically from PostgreSQL using category weights.
     """
     
-    # --- ADDED LOGGING SO YOU CAN SEE IT IN TERMINAL ---
-    print(f"\n✅ [BACKEND RECEIVED DATA]: Latitude: {lat}, Longitude: {lng}, Business Type: {business_type}\n")
+    # --- LOGGING TO TERMINAL ---
+    print(f"\n✅ [BACKEND RECEIVED]: Lat: {lat}, Lng: {lng}, Type: {business_type}\n")
     
-    # Example logic using the 'h3' library you installed:
-    # Get the H3 hexagon cell index for this latitude/longitude at resolution 8
+    # 1. Convert specific coordinates to Regional Hex Grid ID
     h3_index = h3.latlng_to_cell(lat, lng, 8)
+    print("h3_index", h3_index)
     
+    # 2. Query Machine Learning Data from Database
+    db_data = None
+    try:
+        cursor = db.cursor(cursor_factory=RealDictCursor)
+        # Note: In the new DB schema, the category name is stored in the 'competition' column
+        cursor.execute("SELECT * FROM business_scores WHERE hex_id = %s AND competition = %s LIMIT 1;", (h3_index, business_type))
+        db_data = cursor.fetchone()
+        
+        if not db_data:
+            # Fallback: Just get ANY row for this hex if exactly this business isn't there
+            cursor.execute("SELECT * FROM business_scores WHERE hex_id = %s LIMIT 1;", (h3_index,))
+            db_data = cursor.fetchone()
+            
+        cursor.close()
+    except Exception as e:
+        print("❌ Database query failed:", e)
+
+    # Helper to clean up DB floats safely
+    def safe_score(val):
+        try:
+            v = float(val)
+            return int(v * 100) if v <= 1.2 else int(v)
+        except:
+            return 0
+
+    # 3. Apply Multi-Layer Weightings
+    if db_data:
+        road_pct = safe_score(db_data.get('road_pct', 0))
+        pofw_pct = safe_score(db_data.get('pofw_pct', 0))
+        transport_pct = safe_score(db_data.get('transport_pct', 0))
+        traffic_pct = safe_score(db_data.get('traffic_pct', 0))
+        poi_pct = safe_score(db_data.get('poi_pct', 0))
+        pop_pct = safe_score(db_data.get('population_pct', 0))
+        
+        weights = CATEGORY_WEIGHTS.get(business_type, CATEGORY_WEIGHTS["other"])
+        
+        # Calculate dynamic final score based on requested weight profile
+        overall_score = int(
+            (road_pct * weights["road"]) +
+            (pofw_pct * weights["pofw"]) +
+            (transport_pct * weights["transport"]) +
+            (traffic_pct * weights["traffic"]) +
+            (poi_pct * weights["poi"]) +
+            (pop_pct * weights["pop"])
+        )
+        
+    else:
+        # Emergency Default Fallback Array
+        road_pct = 45; pofw_pct = 45; transport_pct = 45; traffic_pct = 45; poi_pct = 45; pop_pct = 45
+        overall_score = 45 
+
+    # 4. Map directly to Frontend Format dynamically
+    factors = [
+        {"label": "Local Population", "icon": "👥", "value": pop_pct},
+        {"label": "Road Matrix", "icon": "🛣️", "value": road_pct},
+        {"label": "Points of Interest", "icon": "📍", "value": poi_pct},
+        {"label": "Public Transit", "icon": "🚆", "value": transport_pct},
+        {"label": "Traffic Index", "icon": "🚗", "value": traffic_pct},
+        {"label": "Waterways (POFW)", "icon": "💧", "value": pofw_pct}
+    ]
+
     return {
-        # Backend debugging metadata
         "location": {"lat": lat, "lng": lng},
         "h3_index": h3_index,
         "business_type": business_type,
-        
-        # Frontend UI required payload
-        "score": 85,
-        "factors": [
-            {"label": "Population Density", "icon": "👥", "value": 78},
-            {"label": "Road & Transit Access", "icon": "🛣️", "value": 65},
-            {"label": "Competition Index", "icon": "🏪", "value": 80, "inverted": True},
-            {"label": "Risk Score", "icon": "⚠️", "value": 15, "inverted": True},
-            {"label": "Purchasing Power", "icon": "💰", "value": 60}
-        ],
+        "score": overall_score,
+        "factors": factors,
         "bestBusiness": {
             "type": "EV Charging Station",
             "icon": "⚡",
@@ -117,11 +214,9 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe"):
         "betterLocation": {
             "lat": lat + 0.005,
             "lng": lng - 0.005,
-            "score": 92
+            "score": min(100, overall_score + 10)
         },
-        "riskFlags": [
-            "High competition detected in a 500m radius"
-        ]
+        "riskFlags": []
     }
 
 # To run the development server, type this in the terminal:

@@ -36,26 +36,35 @@ export default function Analysis() {
 
     let isMounted = true;
 
-    // Simulate network delay and fetch data
     const fetchData = async () => {
       const { location, businessType } = state;
       setIsLoading(true);
       
       try {
         const url = `http://127.0.0.1:8000/api/analyze?lat=${location[0]}&lng=${location[1]}&business_type=${businessType}`;
-        // We let this run in the background just like before
-        await fetch(url).catch(err => console.error("Backend fetch error:", err));
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Short UX delay so loading skeleton isn't jarring on fast local networks
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (isMounted) {
+          setAnalysis(data); // Inject the REAL database ML response into UI!
+          setIsLoading(false);
+        }
       } catch (err) {
-        console.error(err);
-      }
-      
-      // Simulate crunching data for UI effect
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      if (isMounted) {
-        const newAnalysis = generateAnalysis(location[0], location[1], businessType);
-        setAnalysis(newAnalysis);
-        setIsLoading(false);
+        console.error("Backend connection failed! Falling back to mock data.", err);
+        // Emergency offline fallback
+        if (isMounted) {
+          const newAnalysis = generateAnalysis(location[0], location[1], businessType);
+          setAnalysis(newAnalysis);
+          setIsLoading(false);
+        }
       }
     };
 
