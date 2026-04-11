@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, useMapEvents, Marker, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, useMapEvents, Marker, Tooltip, useMap, GeoJSON, CircleMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import LocationSearch from "./LocationSearch";
 import { Loader2 } from "lucide-react";
+import { booleanPointInPolygon, point } from "@turf/turf";
+import { useToast } from "@/hooks/use-toast";
 
 const defaultIcon = L.icon({
   iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
@@ -65,13 +67,65 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
   const [showHint, setShowHint] = useState(true);
   const [panTarget, setPanTarget] = useState<[number, number] | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [indiaGeoJson, setIndiaGeoJson] = useState<any>(null);
+  const [invalidClick, setInvalidClick] = useState<[number, number] | null>(null);
+  const { toast } = useToast();
+
+  const handleInvalidLocation = (lat: number, lng: number) => {
+    toast({
+      title: "Invalid Location",
+      description: "Please select a location within India's borders.",
+      variant: "destructive",
+      duration: 3000,
+    });
+    setInvalidClick([lat, lng]);
+    setTimeout(() => setInvalidClick(null), 1500); // Remove red highlight after 1.5s
+  };
+
+  useEffect(() => {
+    // Load heavy boundaries asynchronously from public folder 
+    // to prevent freezing the main React UI bundle compilation
+    fetch('/data/india.geojson')
+      .then(res => res.json())
+      .then(data => setIndiaGeoJson(data))
+      .catch(err => console.error("Error loading boundary overlay:", err));
+  }, []);
+
+  const isInsideIndia = (lat: number, lng: number) => {
+    if (!indiaGeoJson) return true; // Fail open if boundaries haven't loaded yet
+    
+    // Turf requires standard [longitude, latitude] array order
+    const clickPt = point([lng, lat]);
+    
+    // Check if the clicked point intersects with ANY state polygon
+    for (const feature of indiaGeoJson.features) {
+      try {
+        if (booleanPointInPolygon(clickPt, feature)) {
+          return true;
+        }
+      } catch (err) {
+        // Specifically catch MultiPolygon topological edge-case failures without crashing map
+        console.warn("Boundary validation warning for feature", err);
+      }
+    }
+    
+    return false;
+  };
 
   const handleClick = (lat: number, lng: number) => {
+    if (!isInsideIndia(lat, lng)) {
+      handleInvalidLocation(lat, lng);
+      return; // Ignore the click
+    }
     setShowHint(false);
     onLocationClick(lat, lng);
   };
 
   const handleSearchSelect = (lat: number, lng: number) => {
+    if (!isInsideIndia(lat, lng)) {
+      handleInvalidLocation(lat, lng);
+      return;
+    }
     setPanTarget([lat, lng]);
     onLocationClick(lat, lng);
     setShowHint(false);
@@ -92,6 +146,25 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
         <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
         <ClickHandler onClick={handleClick} />
         {panTarget && <PanTo center={panTarget} />}
+
+        {indiaGeoJson && (
+          <GeoJSON 
+            data={indiaGeoJson}
+            style={{
+              color: '#2563EB', // exact requested blue border
+              weight: 1.5,      // small narrow border
+              fillOpacity: 0.05 // primarily transparent fill so map is clearly seen
+            }}
+          />
+        )}
+
+        {invalidClick && (
+          <CircleMarker 
+            center={invalidClick} 
+            radius={25} 
+            pathOptions={{ color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.3 }} 
+          />
+        )}
 
         {clickedLocation && (
           <Marker position={clickedLocation} icon={defaultIcon}>
@@ -121,6 +194,13 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
                 (pos) => {
                   const lat = pos.coords.latitude;
                   const lng = pos.coords.longitude;
+                  
+                  if (!isInsideIndia(lat, lng)) {
+                    handleInvalidLocation(lat, lng);
+                    setIsLocating(false);
+                    return;
+                  }
+                  
                   setPanTarget([lat, lng]);
                   onLocationClick(lat, lng);
                   setShowHint(false);
@@ -153,7 +233,7 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
 
       {showHint && (
         <div className="absolute top-[88px] left-1/2 -translate-x-1/2 z-[1000] bg-background/80 backdrop-blur-md rounded-full px-5 py-2.5 border border-border shadow-sm text-sm font-medium text-foreground text-center pointer-events-none transition-all duration-500 animate-in fade-in slide-in-from-top-4">
-          Click anywhere on the map to analyze location
+          Click anywhere within India to analyze location
         </div>
       )}
 
