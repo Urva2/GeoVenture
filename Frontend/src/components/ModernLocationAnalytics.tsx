@@ -47,62 +47,55 @@ export default function ModernLocationAnalytics({
         if (f.label.includes("Population")) { icon = Home; description = "Concentration of residential units and foot traffic potential."; }
         else if (f.label.includes("Road")) { icon = Navigation; description = "Connectivity to major roads and public transit lines."; }
         else if (f.label.includes("Competition")) { icon = Store; description = "Market saturation and density of similar local businesses."; }
-        else if (f.label.includes("Risk")) { icon = AlertTriangle; description = "Environmental, zoning, or localized risk factors."; }
-        else if (f.label.includes("Purchasing")) { icon = DollarSign; description = "Average disposable income and spending power in the neighborhood."; }
+        else if (f.label.includes("Risk") || f.label.includes("Water")) { icon = AlertTriangle; description = "Environmental, zoning, or localized risk factors."; }
+        else if (f.label.includes("Purchasing") || f.label.includes("Transport")) { icon = DollarSign; description = "Logistics or average disposable income and spending power."; }
 
         return {
           name: f.label.replace(" Access", "").replace(" Index", ""), // Simplify labels for charts
           value: f.value,
+          plotValue: f.inverted ? 100 - f.value : f.value,
           icon,
           description,
           inverted: f.inverted
         };
       });
     }
-    return data;
+    return data.map(d => ({
+      ...d,
+      plotValue: d.inverted ? 100 - d.value : d.value
+    }));
   }, [analysisResult, data]);
 
   // Helper functions
-  const getEffectiveValue = (value: number, inverted?: boolean) => {
-    return inverted ? 100 - value : value;
-  };
-
-  const getColor = (value: number, inverted?: boolean) => {
-    const eff = getEffectiveValue(value, inverted);
-    if (eff >= 70) return '#10b981'; // Emerald 500 (Good)
-    if (eff >= 40) return '#f59e0b'; // Amber 500 (Moderate)
+  const getColor = (effScore: number) => {
+    if (effScore >= 70) return '#10b981'; // Emerald 500 (Good)
+    if (effScore >= 40) return '#f59e0b'; // Amber 500 (Moderate)
     return '#f43f5e'; // Rose 500 (Bad)
   };
 
-  const getLabel = (value: number, inverted?: boolean) => {
-    const eff = getEffectiveValue(value, inverted);
-    if (eff >= 70) return 'Good';
-    if (eff >= 40) return 'Moderate';
+  const getLabel = (effScore: number) => {
+    if (effScore >= 70) return 'Good';
+    if (effScore >= 40) return 'Moderate';
     return 'Poor';
   };
 
   const overallScore = useMemo(() => {
     if (analysisResult) return analysisResult.score;
-    const sum = activeData.reduce((acc, curr) => acc + getEffectiveValue(curr.value, curr.inverted), 0);
+    const sum = activeData.reduce((acc, curr) => acc + curr.plotValue, 0);
     return Math.round(sum / activeData.length);
   }, [analysisResult, activeData]);
 
   const sortedData = useMemo(() => {
     let sorted = [...activeData];
-    if (sortMode === 'worst') sorted.sort((a, b) => getEffectiveValue(a.value, a.inverted) - getEffectiveValue(b.value, b.inverted));
-    if (sortMode === 'best') sorted.sort((a, b) => getEffectiveValue(b.value, b.inverted) - getEffectiveValue(a.value, a.inverted));
+    if (sortMode === 'worst') sorted.sort((a, b) => a.plotValue - b.plotValue);
+    if (sortMode === 'best') sorted.sort((a, b) => b.plotValue - a.plotValue);
     return sorted;
   }, [activeData, sortMode]);
 
-  const strengths = activeData.filter(d => getEffectiveValue(d.value, d.inverted) >= 70).map(d => d.name);
-  const weaknesses = activeData.filter(d => getEffectiveValue(d.value, d.inverted) < 40).map(d => d.name);
+  const strengths = activeData.filter(d => d.plotValue >= 70).map(d => d.name);
+  const weaknesses = activeData.filter(d => d.plotValue < 40).map(d => d.name);
 
-  // Data mapping for Radar chart which plots magnitude outwards
-  // We plot 'effective value' so Good = Big shape, but show original 'value' on tooltip
-  const radarData = sortedData.map(d => ({
-    ...d,
-    plotValue: getEffectiveValue(d.value, d.inverted)
-  }));
+  const radarData = sortedData;
 
   // Custom Recharts Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -110,8 +103,8 @@ export default function ModernLocationAnalytics({
       const metric = activeData.find(d => d.name === payload[0].payload.name);
       if (!metric) return null;
       
-      const val = metric.value;
-      const color = getColor(val, metric.inverted);
+      const val = metric.plotValue;
+      const color = getColor(val);
       
       return (
         <div className="bg-popover backdrop-blur-md border border-border shadow-xl rounded-xl p-3 max-w-[220px] animate-in zoom-in-95 duration-200">
@@ -122,7 +115,7 @@ export default function ModernLocationAnalytics({
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl font-black" style={{ color }}>{val}</span>
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted/50 border border-border/50 text-muted-foreground uppercase tracking-wide">
-              {getLabel(val, metric.inverted)}
+              {getLabel(val)}
             </span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">{metric.description}</p>
@@ -270,7 +263,7 @@ export default function ModernLocationAnalytics({
                 <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'currentColor', opacity: 0.05 }} />
                 <Bar dataKey="plotValue" radius={[0, 4, 4, 0]} barSize={28} animationDuration={1000}>
                   {radarData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={getColor(entry.value, entry.inverted)} />
+                    <Cell key={`cell-${index}`} fill={getColor(entry.plotValue)} />
                   ))}
                 </Bar>
               </BarChart>
@@ -309,14 +302,14 @@ export default function ModernLocationAnalytics({
                 <div key={i} className="flex items-start sm:items-center gap-4 bg-background p-3 rounded-lg border border-border shadow-sm">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border"
-                    style={{ backgroundColor: `${getColor(metric.value, metric.inverted)}15`, borderColor: `${getColor(metric.value, metric.inverted)}30`, color: getColor(metric.value, metric.inverted) }}
+                    style={{ backgroundColor: `${getColor(metric.plotValue)}15`, borderColor: `${getColor(metric.plotValue)}30`, color: getColor(metric.plotValue) }}
                   >
                     <metric.icon size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <p className="font-semibold text-sm text-foreground truncate">{metric.name}</p>
-                      <span className="font-bold text-sm" style={{ color: getColor(metric.value, metric.inverted) }}>{metric.value}%</span>
+                      <span className="font-bold text-sm" style={{ color: getColor(metric.plotValue) }}>{metric.plotValue}%</span>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{metric.description}</p>
                   </div>
