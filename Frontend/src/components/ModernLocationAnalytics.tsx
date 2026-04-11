@@ -1,11 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, 
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
-import { 
-  Home, Navigation, Store, AlertTriangle, DollarSign, 
-  BarChart2, Focus, ChevronDown, ChevronUp, CheckCircle2, Info
+import {
+  Home, Navigation, Store, AlertTriangle, DollarSign,
+  BarChart2, Focus, ChevronDown, ChevronUp, CheckCircle2, Info,
+  Waves,
+  Truck,
+  Route
 } from 'lucide-react';
 
 import { type AnalysisResult } from "@/lib/analysis";
@@ -28,10 +31,10 @@ const MOCK_METRICS: MetricData[] = [
   { name: 'Competition', value: 35, icon: Store, description: 'Saturated local market with several established competitors nearby.', inverted: true },
 ];
 
-export default function ModernLocationAnalytics({ 
+export default function ModernLocationAnalytics({
   data = MOCK_METRICS,
-  analysisResult 
-}: { 
+  analysisResult
+}: {
   data?: MetricData[],
   analysisResult?: AnalysisResult
 }) {
@@ -45,10 +48,10 @@ export default function ModernLocationAnalytics({
         let icon = Home;
         let description = 'Metric analysis for the area.';
         if (f.label.includes("Population")) { icon = Home; description = "Concentration of residential units and foot traffic potential."; }
-        else if (f.label.includes("Road")) { icon = Navigation; description = "Connectivity to major roads and public transit lines."; }
+        else if (f.label.includes("Road")) { icon = Route; description = "Connectivity to major roads and public transit lines."; }
         else if (f.label.includes("Competition")) { icon = Store; description = "Market saturation and density of similar local businesses."; }
-        else if (f.label.includes("Risk") || f.label.includes("Water")) { icon = AlertTriangle; description = "Environmental, zoning, or localized risk factors."; }
-        else if (f.label.includes("Purchasing") || f.label.includes("Transport")) { icon = DollarSign; description = "Logistics or average disposable income and spending power."; }
+        else if (f.label.includes("Risk") || f.label.includes("Water")) { icon = Waves; description = "Environmental, zoning, or localized risk factors."; }
+        else if (f.label.includes("Purchasing") || f.label.includes("Transport")) { icon = Truck; description = "Logistics or average disposable income and spending power."; }
 
         return {
           name: f.label.replace(" Access", "").replace(" Index", ""), // Simplify labels for charts
@@ -102,10 +105,10 @@ export default function ModernLocationAnalytics({
     if (active && payload && payload.length) {
       const metric = activeData.find(d => d.name === payload[0].payload.name);
       if (!metric) return null;
-      
+
       const val = metric.plotValue;
       const color = getColor(val);
-      
+
       return (
         <div className="bg-popover backdrop-blur-md border border-border shadow-xl rounded-xl p-3 max-w-[220px] animate-in zoom-in-95 duration-200">
           <div className="flex items-center gap-2 mb-1.5">
@@ -127,7 +130,7 @@ export default function ModernLocationAnalytics({
 
   return (
     <div className="w-full max-w-4xl mx-auto rounded-2xl bg-card border border-border shadow-sm overflow-hidden flex flex-col font-sans transition-all duration-300">
-      
+
       {/* Header & Score Section */}
       <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-border/40">
         <div className="space-y-1">
@@ -136,7 +139,7 @@ export default function ModernLocationAnalytics({
           </div>
           <p className="text-sm text-muted-foreground">Comprehensive analysis of site viability metrics.</p>
         </div>
-        
+
         <div className="flex items-center gap-4 bg-background p-4 rounded-xl border border-border/60 shadow-sm shrink-0">
           <div className="text-right">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Overall Score</p>
@@ -182,10 +185,10 @@ export default function ModernLocationAnalytics({
       <div className="p-6 md:p-8 flex flex-col min-h-[400px]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h3 className="text-lg font-bold text-foreground">Interactive Metrics</h3>
-          
+
           <div className="flex items-center gap-2">
             {/* Sort Toggle */}
-            <select 
+            <select
               className="px-3 py-1.5 text-xs font-medium bg-muted/40 hover:bg-muted border border-border rounded-lg outline-none cursor-pointer transition-colors"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value as any)}
@@ -199,22 +202,20 @@ export default function ModernLocationAnalytics({
             <div className="flex items-center p-1 bg-muted/40 border border-border rounded-lg">
               <button
                 onClick={() => setViewType('radar')}
-                className={`p-1.5 rounded-md transition-all ${
-                  viewType === 'radar' 
-                  ? 'bg-background shadow-sm text-foreground' 
+                className={`p-1.5 rounded-md transition-all ${viewType === 'radar'
+                  ? 'bg-background shadow-sm text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
                 title="Radar Chart View"
               >
                 <Focus size={16} />
               </button>
               <button
                 onClick={() => setViewType('bar')}
-                className={`p-1.5 rounded-md transition-all ${
-                  viewType === 'bar' 
-                  ? 'bg-background shadow-sm text-foreground' 
+                className={`p-1.5 rounded-md transition-all ${viewType === 'bar'
+                  ? 'bg-background shadow-sm text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
                 title="Bar Chart View"
               >
                 <BarChart2 size={16} />
@@ -229,12 +230,12 @@ export default function ModernLocationAnalytics({
             {viewType === 'radar' ? (
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
                 <PolarGrid stroke="currentColor" className="text-border" strokeDasharray="3 3" />
-                <PolarAngleAxis 
-                  dataKey="name" 
-                  tick={{ fill: 'currentColor', fontSize: 12, fontWeight: 500 }} 
-                  className="text-foreground/80" 
+                <PolarAngleAxis
+                  dataKey="name"
+                  tick={{ fill: 'currentColor', fontSize: 12, fontWeight: 500 }}
+                  className="text-foreground/80"
                 />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'currentColor' }} className="text-muted-foreground/60" tickCount={6} />
+                {/* <PolarRadiusAxis angle={414} domain={[0, 100]} tick={{ fill: 'currentColor' }} className="text-muted-foreground/60" tickCount={6} /> */}
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Radar
                   name="Metrics"
@@ -251,12 +252,12 @@ export default function ModernLocationAnalytics({
               <BarChart data={radarData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-border/40" />
                 <XAxis type="number" domain={[0, 100]} tick={{ fill: 'currentColor' }} className="text-muted-foreground" tickCount={5} />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={130} 
-                  tick={{ fill: 'currentColor', fontSize: 12, fontWeight: 500 }} 
-                  className="text-foreground/80" 
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={130}
+                  tick={{ fill: 'currentColor', fontSize: 12, fontWeight: 500 }}
+                  className="text-foreground/80"
                   axisLine={false}
                   tickLine={false}
                 />
@@ -273,10 +274,10 @@ export default function ModernLocationAnalytics({
           {/* Threshold Indicator Overlay for Bar Chart */}
           {viewType === 'bar' && (
             <div className="absolute top-0 bottom-0 left-[130px] w-[calc(100%-160px)] pointer-events-none overflow-hidden">
-               {/* 70% mark line */}
-               <div className="absolute top-0 bottom-0 left-[70%] border-l-2 border-dashed border-emerald-500/40 z-0">
-                 <span className="absolute -top-4 left-1 text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest hidden sm:block">Ideal ≥ 70</span>
-               </div>
+              {/* 70% mark line */}
+              <div className="absolute top-0 bottom-0 left-[70%] border-l-2 border-dashed border-emerald-500/40 z-0">
+                <span className="absolute -top-4 left-1 text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest hidden sm:block">Ideal ≥ 70</span>
+              </div>
             </div>
           )}
         </div>
@@ -284,7 +285,7 @@ export default function ModernLocationAnalytics({
 
       {/* Expandable Drill-down Data */}
       <div className="border-t border-border/50">
-        <button 
+        <button
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center justify-between p-4 px-6 md:px-8 hover:bg-muted/40 transition-colors"
         >
@@ -294,13 +295,13 @@ export default function ModernLocationAnalytics({
           </div>
           {expanded ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
         </button>
-        
+
         {expanded && (
           <div className="px-6 md:px-8 pb-6 pt-2 animate-in slide-in-from-top-2 duration-300">
             <div className="grid gap-3">
               {activeData.map((metric, i) => (
                 <div key={i} className="flex items-start sm:items-center gap-4 bg-background p-3 rounded-lg border border-border shadow-sm">
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border"
                     style={{ backgroundColor: `${getColor(metric.plotValue)}15`, borderColor: `${getColor(metric.plotValue)}30`, color: getColor(metric.plotValue) }}
                   >
@@ -323,12 +324,12 @@ export default function ModernLocationAnalytics({
       {/* Bottom Recommendation */}
       <div className="bg-primary/5 p-6 md:p-8 border-t border-primary/10">
         <h4 className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-           Actionable Recommendation
+          Actionable Recommendation
         </h4>
         <p className="text-sm text-foreground/80 leading-relaxed">
-          {analysisResult && strengths.length > 0 
-           ? `The location shows exceptional ${strengths.join(' and ')}, making it highly viable. ${weaknesses.length > 0 ? `However, the ${weaknesses.join(' and ')} necessitates a strong strategy to mitigate potential risks.` : ''}` 
-           : 'The location shows exceptional Purchasing Power and solid Population Density, making it highly viable for premium offerings. However, the saturated Competition necessitates a strong edge in branding or unique product offerings to capture market share.'}
+          {analysisResult && strengths.length > 0
+            ? `The location shows exceptional ${strengths.join(' and ')}, making it highly viable. ${weaknesses.length > 0 ? `However, the ${weaknesses.join(' and ')} necessitates a strong strategy to mitigate potential risks.` : ''}`
+            : 'The location shows exceptional Purchasing Power and solid Population Density, making it highly viable for premium offerings. However, the saturated Competition necessitates a strong edge in branding or unique product offerings to capture market share.'}
         </p>
       </div>
 
