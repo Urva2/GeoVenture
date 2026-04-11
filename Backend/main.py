@@ -28,8 +28,8 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe"):
     """
     
     # Example logic using the 'h3' library you installed:
-    # Get the H3 hexagon cell index for this latitude/longitude at resolution 9
-    h3_index = h3.latlng_to_cell(lat, lng, 9)
+    # Get the H3 hexagon cell index for this latitude/longitude at resolution 8
+    h3_index = h3.latlng_to_cell(lat, lng, 8)
     
     return {
         "location": {"lat": lat, "lng": lng},
