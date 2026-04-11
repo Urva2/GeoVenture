@@ -10,32 +10,17 @@ interface SidebarPanelProps {
 export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
   const navigate = useNavigate();
   const [businessType, setBusinessType] = useState("cafe");
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleAnalyze = () => {
     if (!clickedLocation) return;
-    setIsLoading(true);
-    setTimeout(async () => {
-      // Send the data request to backend in the background
-      const url = `http://127.0.0.1:8000/api/analyze?lat=${clickedLocation[0]}&lng=${clickedLocation[1]}&business_type=${businessType}`;
-      try {
-        await fetch(url);
-      } catch (err) {
-        console.error("Backend request failed", err);
-      }
-
-
-      const r = generateAnalysis(clickedLocation[0], clickedLocation[1], businessType);
-      navigate("/analysis", {
-        state: {
-          location: clickedLocation,
-          businessType,
-          analysis: r,
-        },
-      });
-
-      setIsLoading(false);
-    }, 1000);
+    
+    // Instantly navigate to allow the analysis page to show skeletons and perform loading
+    navigate("/analysis", {
+      state: {
+        location: clickedLocation,
+        businessType,
+      },
+    });
   };
 
   return (
@@ -99,20 +84,11 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
             <div className="pl-[24px]">
               <button
                 onClick={handleAnalyze}
-                disabled={!clickedLocation || isLoading}
+                disabled={!clickedLocation}
                 className="w-full bg-gradient-to-r from-primary to-blue-600 text-primary-foreground font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:hover:shadow-none disabled:hover:translate-y-0 disabled:active:scale-100 flex items-center justify-center gap-2"
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Analyzing Details...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4" />
-                    Analyze Location
-                  </>
-                )}
+                <Search className="h-4 w-4" />
+                Analyze Location
               </button>
             </div>
           </div>
@@ -120,45 +96,27 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
       </div>
 
       {/* Preview Card */}
-      {!isLoading && (
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-              <BarChart4 size={20} className="text-blue-500" />
-            </div>
-            <h3 className="font-bold text-base text-foreground">What you'll get</h3>
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+            <BarChart4 size={20} className="text-blue-500" />
           </div>
-          <ul className="space-y-4 pb-2">
-            {[
-              "Comprehensive Location Score",
-              "Regulatory & Risk Analysis",
-              "Local Competition Insights",
-              "AI Business Recommendations"
-            ].map((item, i) => (
-              <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground font-semibold">
-                <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                {item}
-              </li>
-            ))}
-          </ul>
+          <h3 className="font-bold text-base text-foreground">What you'll get</h3>
         </div>
-      )}
-
-      {/* Full Screen Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
-          <div className="relative mb-6">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-            <div className="w-20 h-20 bg-card border border-border shadow-2xl rounded-2xl flex items-center justify-center relative z-10">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Analyzing Location...</h2>
-          <p className="text-sm text-muted-foreground max-w-sm text-center">
-            Processing geospatial data and generating insights
-          </p>
-        </div>
-      )}
+        <ul className="space-y-4 pb-2">
+          {[
+            "Comprehensive Location Score",
+            "Regulatory & Risk Analysis",
+            "Local Competition Insights",
+            "AI Business Recommendations"
+          ].map((item, i) => (
+            <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground font-semibold">
+              <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
