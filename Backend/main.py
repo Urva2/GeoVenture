@@ -87,15 +87,41 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe"):
     print(f"\n✅ [BACKEND RECEIVED DATA]: Latitude: {lat}, Longitude: {lng}, Business Type: {business_type}\n")
     
     # Example logic using the 'h3' library you installed:
-    # Get the H3 hexagon cell index for this latitude/longitude at resolution 9
-    h3_index = h3.latlng_to_cell(lat, lng, 9)
+    # Get the H3 hexagon cell index for this latitude/longitude at resolution 8
+    h3_index = h3.latlng_to_cell(lat, lng, 8)
     
     return {
+        # Backend debugging metadata
         "location": {"lat": lat, "lng": lng},
         "h3_index": h3_index,
         "business_type": business_type,
+        
+        # Frontend UI required payload
         "score": 85,
-        "status": "Analyzing..."
+        "factors": [
+            {"label": "Population Density", "icon": "👥", "value": 78},
+            {"label": "Road & Transit Access", "icon": "🛣️", "value": 65},
+            {"label": "Competition Index", "icon": "🏪", "value": 80, "inverted": True},
+            {"label": "Risk Score", "icon": "⚠️", "value": 15, "inverted": True},
+            {"label": "Purchasing Power", "icon": "💰", "value": 60}
+        ],
+        "bestBusiness": {
+            "type": "EV Charging Station",
+            "icon": "⚡",
+            "reasons": [
+                "Low competition within 1km radius",
+                "High transit footfall nearby",
+                "Above-average purchasing power in area"
+            ]
+        },
+        "betterLocation": {
+            "lat": lat + 0.005,
+            "lng": lng - 0.005,
+            "score": 92
+        },
+        "riskFlags": [
+            "High competition detected in a 500m radius"
+        ]
     }
 
 # To run the development server, type this in the terminal:
