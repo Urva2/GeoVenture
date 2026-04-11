@@ -15,7 +15,16 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
   const handleAnalyze = () => {
     if (!clickedLocation) return;
     setIsLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
+      // Send the data request to backend in the background
+      const url = `http://127.0.0.1:8000/api/analyze?lat=${clickedLocation[0]}&lng=${clickedLocation[1]}&business_type=${businessType}`;
+      try {
+        await fetch(url);
+      } catch (err) {
+        console.error("Backend request failed", err);
+      }
+
+
       const r = generateAnalysis(clickedLocation[0], clickedLocation[1], businessType);
       navigate("/analysis", {
         state: {
@@ -24,8 +33,9 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
           analysis: r,
         },
       });
+
       setIsLoading(false);
-    }, 1500);
+    }, 1000);
   };
 
   return (
