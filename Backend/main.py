@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse
 import h3
 
 # Initialize the FastAPI application
-app = FastAPI(title="GeoVenture API", description="Backend for location intelligence", version="1.0.0")
+app = FastAPI(title="GeoVenture API", description="Backend for location intelligence", version="1.0.0", docs_url=None)
 
 # Configure CORS so the React frontend can talk to this backend
 app.add_middleware(
@@ -16,6 +18,61 @@ app.add_middleware(
 
 # ---- HERE is where you will write your API functions ----
 
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    html_response = get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI"
+    )
+    body = html_response.body.decode("utf-8")
+    script = """
+    <script>
+    window.onload = function() {
+        setTimeout(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const lat = urlParams.get('lat');
+            const lng = urlParams.get('lng');
+            
+            if (lat || lng) {
+                const btn = document.querySelector('#operations-default-analyze_location_api_analyze_get .opblock-summary');
+                if (btn) btn.click();
+                
+                setTimeout(() => {
+                    const tryBtn = document.querySelector('#operations-default-analyze_location_api_analyze_get .try-out__btn');
+                    if(tryBtn) tryBtn.click();
+                    
+                    setTimeout(() => {
+                        if(lat) {
+                            const latInput = document.querySelector('input[placeholder="lat"]');
+                            if(latInput) {
+                                let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                setter.call(latInput, lat);
+                                latInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                        if(lng) {
+                            const lngInput = document.querySelector('input[placeholder="lng"]');
+                            if(lngInput) {
+                                let setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                setter.call(lngInput, lng);
+                                lngInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                        
+                        setTimeout(() => {
+                            const execBtn = document.querySelector('#operations-default-analyze_location_api_analyze_get .execute');
+                            if(execBtn) execBtn.click();
+                        }, 300);
+                    }, 500);
+                }, 500);
+            }
+        }, 1000);
+    };
+    </script>
+    """
+    body = body.replace("</body>", f"{script}</body>")
+    return HTMLResponse(body)
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to GeoVenture Backend API!"}
@@ -24,8 +81,10 @@ def read_root():
 def analyze_location(lat: float, lng: float, business_type: str = "cafe"):
     """
     Example API endpoint that receives coordinates and returns an analysis.
-    You will eventually replace the frontend mock data with this logic.
     """
+    
+    # --- ADDED LOGGING SO YOU CAN SEE IT IN TERMINAL ---
+    print(f"\n✅ [BACKEND RECEIVED DATA]: Latitude: {lat}, Longitude: {lng}, Business Type: {business_type}\n")
     
     # Example logic using the 'h3' library you installed:
     # Get the H3 hexagon cell index for this latitude/longitude at resolution 8
