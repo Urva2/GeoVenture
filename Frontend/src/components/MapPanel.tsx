@@ -3,6 +3,16 @@ import { MapContainer, TileLayer, useMapEvents, Marker, Tooltip, useMap } from "
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import LocationSearch from "./LocationSearch";
+import { Loader2 } from "lucide-react";
+
+const defaultIcon = L.icon({
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 interface MapPanelProps {
   onLocationClick: (lat: number, lng: number) => void;
@@ -54,6 +64,7 @@ const INDIA_BOUNDS: L.LatLngBoundsExpression = [
 export default function MapPanel({ onLocationClick, clickedLocation, betterLocation, showBetter }: MapPanelProps) {
   const [showHint, setShowHint] = useState(true);
   const [panTarget, setPanTarget] = useState<[number, number] | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   const handleClick = (lat: number, lng: number) => {
     setShowHint(false);
@@ -83,7 +94,11 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
         {panTarget && <PanTo center={panTarget} />}
 
         {clickedLocation && (
-          <Marker position={clickedLocation} icon={createPulseIcon()} />
+          <Marker position={clickedLocation} icon={defaultIcon}>
+            <Tooltip permanent direction="top" offset={[0, -42]} className="!bg-card !text-foreground !border-border !rounded-lg !text-xs !px-2 !py-1 !shadow-md font-semibold">
+              Selected Location
+            </Tooltip>
+          </Marker>
         )}
 
         {showBetter && betterLocation && (
@@ -101,19 +116,33 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
         <button
           onClick={() => {
             if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition((pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                setPanTarget([lat, lng]);
-                onLocationClick(lat, lng);
-                setShowHint(false);
-              });
+              setIsLocating(true);
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const lat = pos.coords.latitude;
+                  const lng = pos.coords.longitude;
+                  setPanTarget([lat, lng]);
+                  onLocationClick(lat, lng);
+                  setShowHint(false);
+                  setIsLocating(false);
+                },
+                (error) => {
+                  console.error("Error fetching location", error);
+                  setIsLocating(false);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+              );
             }
           }}
-          className="w-10 h-10 bg-card hover:bg-muted text-foreground border border-border shadow-sm rounded-xl flex items-center justify-center transition-all hover:scale-[1.05] active:scale-95"
+          disabled={isLocating}
+          className="w-10 h-10 bg-card hover:bg-muted text-foreground border border-border shadow-sm rounded-xl flex items-center justify-center transition-all hover:scale-[1.05] active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:hover:scale-100"
           title="Use My Location"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
+          {isLocating ? (
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
+          )}
         </button>
       </div>
 
