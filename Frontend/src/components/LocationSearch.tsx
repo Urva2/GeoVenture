@@ -3,6 +3,8 @@ import { Search, MapPin, Loader2, X } from "lucide-react";
 
 interface LocationSearchProps {
   onLocationSelect: (lat: number, lng: number) => void;
+  compact?: boolean;
+  placeholder?: string;
 }
 
 interface Suggestion {
@@ -12,7 +14,7 @@ interface Suggestion {
   display_name: string;
 }
 
-export default function LocationSearch({ onLocationSelect }: LocationSearchProps) {
+export default function LocationSearch({ onLocationSelect, compact = false, placeholder }: LocationSearchProps) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,15 +127,21 @@ export default function LocationSearch({ onLocationSelect }: LocationSearchProps
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-full max-w-md mx-auto">
-      <div className="relative flex items-center bg-card/95 backdrop-blur-md rounded-full border border-border shadow-lg hover:shadow-xl focus-within:shadow-xl focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary/50 transition-all duration-300">
-        <Search className="w-[18px] h-[18px] text-muted-foreground ml-4 shrink-0 transition-colors" />
+    <div ref={wrapperRef} className={`relative w-full ${compact ? '' : 'max-w-md mx-auto'}`}>
+      <div className={`relative flex items-center transition-all duration-300 ${
+        compact
+          ? 'bg-secondary rounded-xl border border-border focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50'
+          : 'bg-card/95 backdrop-blur-md rounded-full border border-border shadow-lg hover:shadow-xl focus-within:shadow-xl focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary/50'
+      }`}>
+        <Search className={`text-muted-foreground shrink-0 transition-colors ${compact ? 'w-4 h-4 ml-3' : 'w-[18px] h-[18px] ml-4'}`} />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for a location (city, place...)"
-          className="w-full bg-transparent border-none outline-none py-3.5 px-3 text-[14px] font-medium text-foreground placeholder:text-muted-foreground placeholder:font-normal"
+          placeholder={placeholder || "Search for a location (city, place...)"}
+          className={`w-full bg-transparent border-none outline-none font-medium text-foreground placeholder:text-muted-foreground placeholder:font-normal ${
+            compact ? 'py-2.5 px-2.5 text-[13px]' : 'py-3.5 px-3 text-[14px]'
+          }`}
           onFocus={() => {
             if (suggestions.length > 0) setIsOpen(true);
           }}
@@ -155,12 +163,12 @@ export default function LocationSearch({ onLocationSelect }: LocationSearchProps
           }}
         />
         {isLoading ? (
-          <Loader2 className="w-5 h-5 text-primary animate-spin mr-4 shrink-0" />
+          <Loader2 className={`text-primary animate-spin shrink-0 ${compact ? 'w-4 h-4 mr-3' : 'w-5 h-5 mr-4'}`} />
         ) : query ? (
-          <button onClick={() => { setQuery(""); setSuggestions([]); setIsOpen(false); }} className="mr-3 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0">
-            <X className="w-4 h-4" />
+          <button onClick={() => { setQuery(""); setSuggestions([]); setIsOpen(false); }} className={`rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 ${compact ? 'mr-2 p-1' : 'mr-3 p-1.5'}`}>
+            <X className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
           </button>
-        ) : <div className="w-8 shrink-0" />}
+        ) : <div className={compact ? 'w-6 shrink-0' : 'w-8 shrink-0'} />}
       </div>
 
       {/* Dropdown */}
