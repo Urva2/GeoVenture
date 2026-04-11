@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMapEvents, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import LocationSearch from "./LocationSearch";
 
 interface MapPanelProps {
   onLocationClick: (lat: number, lng: number) => void;
@@ -40,7 +41,7 @@ function ClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void
 function PanTo({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, 14, { duration: 1 });
+    map.flyTo(center, 13, { duration: 1.5 });
   }, [center, map]);
   return null;
 }
@@ -57,6 +58,12 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
   const handleClick = (lat: number, lng: number) => {
     setShowHint(false);
     onLocationClick(lat, lng);
+  };
+
+  const handleSearchSelect = (lat: number, lng: number) => {
+    setPanTarget([lat, lng]);
+    onLocationClick(lat, lng);
+    setShowHint(false);
   };
 
   return (
@@ -110,8 +117,13 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
         </button>
       </div>
 
+      {/* Top Center Location Search */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] w-full px-4 sm:px-0 sm:w-auto">
+        <LocationSearch onLocationSelect={handleSearchSelect} />
+      </div>
+
       {showHint && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] bg-background/80 backdrop-blur-md rounded-full px-5 py-2.5 border border-border shadow-sm text-sm font-medium text-foreground text-center pointer-events-none transition-all duration-500 animate-in fade-in slide-in-from-top-4">
+        <div className="absolute top-[88px] left-1/2 -translate-x-1/2 z-[1000] bg-background/80 backdrop-blur-md rounded-full px-5 py-2.5 border border-border shadow-sm text-sm font-medium text-foreground text-center pointer-events-none transition-all duration-500 animate-in fade-in slide-in-from-top-4">
           Click anywhere on the map to analyze location
         </div>
       )}
