@@ -138,13 +138,6 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
             )}
           </div>
 
-          {/* Swap icon divider */}
-          <div className="flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <ArrowLeftRight size={14} className="text-muted-foreground" />
-            </div>
-          </div>
-
           {/* Location B */}
           <div>
             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 block">Location B</label>

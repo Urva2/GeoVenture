@@ -2,23 +2,70 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, Cell, Legend
+  ResponsiveContainer, Legend, Cell
 } from "recharts";
 import {
-  ArrowLeft, Trophy, TrendingUp, TrendingDown, CheckCircle2,
-  AlertTriangle, Crown, ArrowLeftRight, Zap
+  ArrowLeft, Users, Car, Building2, Waves, Route,
+  Check, Plus, ArrowLeftRight, Crown,
+  Zap, TrendingUp
 } from "lucide-react";
 import { type AnalysisResult, generateAnalysis, BUSINESS_TYPES } from "@/lib/analysis";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-interface CompareState {
-  locationA: [number, number];
-  locationB: [number, number];
-  businessType: string;
-}
+const ScoreGradient = ({ score, children }: { score: number, children: React.ReactNode }) => {
+  const gradientClass = score >= 70 
+    ? "from-orange-400 to-orange-600" 
+    : score >= 40 
+      ? "from-amber-400 to-amber-600" 
+      : "from-rose-400 to-rose-600";
+  return (
+    <span className={cn("bg-clip-text text-transparent bg-gradient-to-br font-black", gradientClass)}>
+      {children}
+    </span>
+  );
+};
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={`animate-pulse bg-muted rounded-md ${className}`} {...props} />;
 }
+
+const InsightCard = ({
+  title,
+  description,
+  metrics,
+  colorClass,
+  icon: Icon
+}: {
+  title: string;
+  description: string;
+  metrics: string[];
+  colorClass: string;
+  icon: any;
+}) => (
+  <div className="bg-white/70 backdrop-blur-md rounded-xl border border-gray-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-[2px] transition-all duration-300 flex flex-col h-full group">
+    <div className="flex items-center gap-2.5 mb-2">
+      <div className={cn("p-2 rounded-lg transition-colors", colorClass)}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <h4 className="font-extrabold text-sm text-slate-800 tracking-wide uppercase">{title}</h4>
+    </div>
+    <p className="text-xs text-slate-500 mb-3 ml-0.5 font-medium leading-relaxed">{description}</p>
+    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 mt-auto">
+      {metrics.length > 0 ? metrics.map((m, i) => (
+        <Badge
+          key={i}
+          variant="secondary"
+          className="px-3.5 py-1.5 bg-gray-200/60 text-slate-600 border-none rounded-full text-xs font-bold uppercase tracking-wider transition-all hover:bg-gray-300 cursor-default"
+        >
+          {m}
+        </Badge>
+      )) : (
+        <p className="text-xs text-slate-400 italic font-medium py-1">No specific advantages identified yet.</p>
+      )}
+    </div>
+  </div>
+);
 
 export default function Compare() {
   const routeLocation = useLocation();
@@ -35,7 +82,6 @@ export default function Compare() {
     const fetchBoth = async () => {
       setIsLoading(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
-
       const a = generateAnalysis(state.locationA[0], state.locationA[1], state.businessType);
       const b = generateAnalysis(state.locationB[0], state.locationB[1], state.businessType);
       setAnalysisA(a);
@@ -46,44 +92,30 @@ export default function Compare() {
     fetchBoth();
   }, [state]);
 
-  if (!state) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <p className="text-foreground mb-4">No comparison data available</p>
-          <button onClick={() => navigate("/")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">
-            Go back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const businessLabel = BUSINESS_TYPES.find(b => b.value === state.businessType)?.label || state.businessType;
-  const locALabel = `${state.locationA[0].toFixed(4)}, ${state.locationA[1].toFixed(4)}`;
-  const locBLabel = `${state.locationB[0].toFixed(4)}, ${state.locationB[1].toFixed(4)}`;
+  const locALabel = state ? `${state.locationA[0].toFixed(2)}, ${state.locationA[1].toFixed(2)}` : "";
+  const locBLabel = state ? `${state.locationB[0].toFixed(2)}, ${state.locationB[1].toFixed(2)}` : "";
 
-  // Build comparison chart data
   const chartData = useMemo(() => {
     if (!analysisA || !analysisB) return [];
     return analysisA.factors.map((fA, i) => {
       const fB = analysisB.factors[i];
       const effA = fA.inverted ? 100 - fA.value : fA.value;
       const effB = fB.inverted ? 100 - fB.value : fB.value;
+      const label = fA.label.replace(" Access", "").replace(" Index", "");
       return {
-        name: fA.label.replace(" Access", "").replace(" Index", ""),
+        name: label,
         "Location A": effA,
         "Location B": effB,
       };
     });
   }, [analysisA, analysisB]);
 
-  // Summary insights
   const insights = useMemo(() => {
     if (!analysisA || !analysisB || chartData.length === 0) return { aWins: [], bWins: [], winner: "" };
     const aWins: string[] = [];
     const bWins: string[] = [];
-    chartData.forEach(d => {
+    chartData.forEach((d: any) => {
       if (d["Location A"] > d["Location B"]) aWins.push(d.name);
       else if (d["Location B"] > d["Location A"]) bWins.push(d.name);
     });
@@ -98,89 +130,95 @@ export default function Compare() {
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 70) return "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50";
-    if (score >= 40) return "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50";
-    return "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50";
+    if (score >= 70) return "bg-white border-emerald-100 ring-1 ring-emerald-50";
+    if (score >= 40) return "bg-white border-amber-100 ring-1 ring-amber-50";
+    return "bg-white border-rose-100 ring-1 ring-rose-50";
   };
 
-  // Custom tooltip for the grouped bar chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-popover backdrop-blur-md border border-border shadow-xl rounded-xl p-3 min-w-[180px]">
-          <p className="font-bold text-sm text-foreground mb-2">{label}</p>
-          {payload.map((p: any, i: number) => (
-            <div key={i} className="flex items-center justify-between gap-4 text-sm">
-              <span className="font-medium text-muted-foreground">{p.name}</span>
-              <span className="font-black" style={{ color: p.fill }}>{p.value}</span>
-            </div>
-          ))}
+  if (!state) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-foreground mb-4">No comparison data available</p>
+          <button onClick={() => navigate("/")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">
+            Go back
+          </button>
         </div>
-      );
-    }
-    return null;
-  };
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen w-screen bg-background flex flex-col">
+    <div className="h-screen w-screen bg-gray-50 flex flex-col selection:bg-blue-500/20 overflow-hidden">
       {/* Header */}
-      <header className="h-16 shrink-0 bg-card flex items-center px-6 border-b border-border z-50 shadow-sm">
-        <button onClick={() => navigate("/")} className="mr-4 p-2 rounded-lg hover:bg-muted transition-colors">
-          <ArrowLeft size={18} className="text-foreground" />
+      <header className="h-14 shrink-0 bg-white flex items-center px-6 border-b border-gray-200 shadow-sm z-[100]">
+        <button
+          onClick={() => navigate("/")}
+          className="mr-4 w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-all active:scale-90 group"
+        >
+          <ArrowLeft size={16} className="text-foreground group-hover:-translate-x-0.5 transition-transform" />
         </button>
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-sm shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
             <ArrowLeftRight size={16} className="text-white" />
           </div>
           <div className="flex flex-col justify-center">
-            <span className="font-extrabold text-lg tracking-tight leading-none mb-0.5 text-foreground">
-              Location Comparison
-            </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+            <h1 className="font-black text-lg tracking-tight leading-none mb-0.5 text-foreground">
+              Comparison
+            </h1>
+            <p className="text-[9px] uppercase font-bold tracking-[0.1em] text-muted-foreground flex items-center gap-1">
+              <Zap size={8} className="text-blue-500" />
               {businessLabel}
-            </span>
+            </p>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex-1 p-6 flex flex-col min-h-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto space-y-4 h-full flex flex-col w-full min-h-0">
 
-          {/* Score Cards Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Top Cards Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0 h-[40%]">
             {/* Location A Card */}
-            <div className={`relative rounded-2xl border p-6 shadow-sm transition-all ${
-              isLoading ? 'bg-card border-border' : getScoreBg(analysisA?.score || 0)
-            } ${!isLoading && insights.winner === 'A' ? 'ring-2 ring-emerald-500/30' : ''}`}>
+            <div className={`relative rounded-xl border p-4 shadow-sm hover:shadow-md hover:-translate-y-[2px] transition-all duration-300 ${isLoading ? 'bg-white border-gray-200' : getScoreBg(analysisA?.score || 0)
+              } ${!isLoading && insights.winner === 'A' ? 'ring-2 ring-emerald-400/30' : ''}`}>
               {!isLoading && insights.winner === 'A' && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                  <Crown size={12} /> Best Pick
+                <div className="absolute -top-2.5 left-6 bg-green-100 text-green-700 text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-2 shadow-sm ring-1 ring-green-300">
+                  <Crown className="w-3 h-3" /> Best Pick
                 </div>
               )}
-              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Location A</p>
-              <p className="text-xs text-muted-foreground font-mono mb-4">{locALabel}</p>
+              <div className="flex justify-between items-start mb-3 border-b border-gray-100 pb-2">
+                <div>
+                  <p className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">Location A</p>
+                  <p className="text-xs text-slate-400 font-mono mt-1.5">{locALabel}</p>
+                </div>
+              </div>
               {isLoading ? (
-                <div className="flex flex-col items-center gap-3 py-4">
-                  <Skeleton className="w-20 h-20 rounded-full" />
-                  <Skeleton className="w-24 h-5" />
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <Skeleton className="w-16 h-16 rounded-full" />
+                  <Skeleton className="w-20 h-4" />
                 </div>
               ) : (
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-center">
-                    <span className={`text-5xl font-black leading-none ${getScoreColor(analysisA!.score)}`}>{analysisA!.score}</span>
-                    <span className="text-xs text-muted-foreground font-semibold mt-1">/ 100</span>
+                <div className="flex items-center gap-6 mt-2 h-[calc(100%-4rem)]">
+                  <div className="flex flex-col items-center justify-center text-center min-w-[80px]">
+                    <ScoreGradient score={analysisA!.score}>
+                      <span className="text-5xl tracking-tighter">{analysisA!.score}</span>
+                    </ScoreGradient>
+                    <span className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest leading-none opacity-60">/ 100</span>
                   </div>
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3 pl-6 border-l border-slate-100">
                     {analysisA!.factors.map((f, i) => {
                       const eff = f.inverted ? 100 - f.value : f.value;
                       return (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-foreground/70 w-28 truncate">{f.label.replace(" Access", "").replace(" Index", "")}</span>
-                          <div className="flex-1 h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" style={{ width: `${eff}%` }} />
+                        <div key={i} className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-500 truncate uppercase tracking-tight">{f.label.replace(" Access", "").replace(" Index", "")}</span>
+                            <span className="text-[11px] font-black text-slate-700 tabular-nums shrink-0">{eff}</span>
                           </div>
-                          <span className="text-[11px] font-bold text-foreground/70 w-6 text-right">{eff}</span>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden w-full">
+                            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-1000 ease-out" style={{ width: `${eff}%` }} />
+                          </div>
                         </div>
                       );
                     })}
@@ -190,37 +228,44 @@ export default function Compare() {
             </div>
 
             {/* Location B Card */}
-            <div className={`relative rounded-2xl border p-6 shadow-sm transition-all ${
-              isLoading ? 'bg-card border-border' : getScoreBg(analysisB?.score || 0)
-            } ${!isLoading && insights.winner === 'B' ? 'ring-2 ring-emerald-500/30' : ''}`}>
+            <div className={`relative rounded-xl border p-4 shadow-sm hover:shadow-md hover:-translate-y-[2px] transition-all duration-300 ${isLoading ? 'bg-white border-gray-200' : getScoreBg(analysisB?.score || 0)
+              } ${!isLoading && insights.winner === 'B' ? 'ring-2 ring-emerald-400/30' : ''}`}>
               {!isLoading && insights.winner === 'B' && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                  <Crown size={12} /> Best Pick
+                <div className="absolute -top-2.5 left-6 bg-green-100 text-green-700 text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-2 shadow-sm ring-1 ring-green-300">
+                  <Crown className="w-3 h-3" /> Best Pick
                 </div>
               )}
-              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Location B</p>
-              <p className="text-xs text-muted-foreground font-mono mb-4">{locBLabel}</p>
+              <div className="flex justify-between items-start mb-3 border-b border-gray-100 pb-2">
+                <div>
+                  <p className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">Location B</p>
+                  <p className="text-xs text-slate-400 font-mono mt-1.5">{locBLabel}</p>
+                </div>
+              </div>
               {isLoading ? (
-                <div className="flex flex-col items-center gap-3 py-4">
-                  <Skeleton className="w-20 h-20 rounded-full" />
-                  <Skeleton className="w-24 h-5" />
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <Skeleton className="w-16 h-16 rounded-full" />
+                  <Skeleton className="w-20 h-4" />
                 </div>
               ) : (
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-center">
-                    <span className={`text-5xl font-black leading-none ${getScoreColor(analysisB!.score)}`}>{analysisB!.score}</span>
-                    <span className="text-xs text-muted-foreground font-semibold mt-1">/ 100</span>
+                <div className="flex items-center gap-6 mt-2 h-[calc(100%-4rem)]">
+                  <div className="flex flex-col items-center justify-center text-center min-w-[80px]">
+                    <ScoreGradient score={analysisB!.score}>
+                      <span className="text-5xl tracking-tighter">{analysisB!.score}</span>
+                    </ScoreGradient>
+                    <span className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest leading-none opacity-60">/ 100</span>
                   </div>
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3 pl-6 border-l border-slate-100">
                     {analysisB!.factors.map((f, i) => {
                       const eff = f.inverted ? 100 - f.value : f.value;
                       return (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-foreground/70 w-28 truncate">{f.label.replace(" Access", "").replace(" Index", "")}</span>
-                          <div className="flex-1 h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-600" style={{ width: `${eff}%` }} />
+                        <div key={i} className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-500 truncate uppercase tracking-tight">{f.label.replace(" Access", "").replace(" Index", "")}</span>
+                            <span className="text-[11px] font-black text-slate-700 tabular-nums shrink-0">{eff}</span>
                           </div>
-                          <span className="text-[11px] font-bold text-foreground/70 w-6 text-right">{eff}</span>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden w-full">
+                            <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-1000 ease-out" style={{ width: `${eff}%` }} />
+                          </div>
                         </div>
                       );
                     })}
@@ -230,129 +275,112 @@ export default function Compare() {
             </div>
           </div>
 
-          {/* Comparative Bar Chart */}
-          <div className="bg-card rounded-2xl border border-border shadow-sm p-6 md:p-8">
-            <h3 className="text-lg font-bold text-foreground mb-1">Metric Comparison</h3>
-            <p className="text-sm text-muted-foreground mb-6">Side-by-side performance across all viability factors</p>
+          {/* Main Analytics Grid: Chart + Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[60%] min-h-0">
+            {/* Chart Column (70%) */}
+            <div className="lg:col-span-2 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200/60 shadow-sm flex flex-col min-h-0">
+              <div className="px-5 py-2.5 border-b border-gray-200/60 shrink-0">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.12em]">Metric Performance</h3>
+              </div>
 
-            {isLoading ? (
-              <div className="h-[300px] flex items-center justify-center">
-                <Skeleton className="w-full h-full rounded-xl" />
+              <div className="flex-1 p-3 pb-0 overflow-hidden min-h-0">
+                {isLoading ? (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 5 }} barSize={36} barGap={6} barCategoryGap="20%">
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border/10" />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'currentColor', fontSize: 11, fontWeight: 700 }}
+                        interval={0}
+                        dy={8}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'currentColor', fontSize: 11, fontWeight: 600 }}
+                      />
+                      <RechartsTooltip
+                        cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-popover shadow-xl rounded-xl p-3 border border-border animate-in zoom-in-95 duration-200">
+                                <p className="font-black text-[9px] uppercase tracking-widest text-muted-foreground mb-2">{label}</p>
+                                <div className="space-y-1.5">
+                                  {payload.map((p: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between gap-4">
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.fill }} />
+                                        <span className="text-[9px] font-bold text-foreground">{p.name}</span>
+                                      </div>
+                                      <span className="font-black text-[10px]" style={{ color: p.fill }}>
+                                        {p.value}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        align="right"
+                        iconType="circle"
+                        wrapperStyle={{ paddingBottom: 10, fontSize: 8, fontWeight: 800, textTransform: 'uppercase' }}
+                      />
+                      <Bar name="A" dataKey="Location A" fill="#3b82f6" radius={[4, 4, 0, 0]} animationDuration={1000} animationEasing="ease-out">
+                        {chartData.map((_entry, index) => (
+                          <Cell key={`cell-a-${index}`} className="hover:opacity-80 transition-opacity cursor-pointer duration-300" />
+                        ))}
+                      </Bar>
+                      <Bar name="B" dataKey="Location B" fill="#8b5cf6" radius={[4, 4, 0, 0]} animationDuration={1000} animationEasing="ease-out" animationBegin={200}>
+                        {chartData.map((_entry, index) => (
+                          <Cell key={`cell-b-${index}`} className="hover:opacity-80 transition-opacity cursor-pointer duration-300" />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
-            ) : (
-              <div className="h-[320px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-border/40" />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'currentColor' }} className="text-muted-foreground" tickCount={5} />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={130}
-                      tick={{ fill: 'currentColor', fontSize: 12, fontWeight: 600 }}
-                      className="text-foreground/80"
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Legend
-                      wrapperStyle={{ fontSize: '12px', fontWeight: 700 }}
-                      iconType="circle"
-                      iconSize={8}
-                    />
-                    <Bar dataKey="Location A" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={14} animationDuration={1000} />
-                    <Bar dataKey="Location B" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={14} animationDuration={1200} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            </div>
+
+            {/* Insights Column (30%) */}
+            <div className="flex flex-col gap-3 shrink-0">
+               <InsightCard 
+                  title="Location A Wins" 
+                  description="Metrics where Location A outperforms in competitiveness and accessibility."
+                  metrics={insights.aWins} 
+                  colorClass="bg-blue-50 text-blue-600"
+                  icon={TrendingUp}
+               />
+               <InsightCard 
+                  title="Location B Wins" 
+                  description="Metrics where Location B shows superior performance and potential."
+                  metrics={insights.bWins} 
+                  colorClass="bg-purple-50 text-purple-600"
+                  icon={TrendingUp}
+               />
+            </div>
           </div>
-
-          {/* Insights Row */}
-          {!isLoading && analysisA && analysisB && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Location A Advantages */}
-              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={18} className="text-blue-500" />
-                  <h4 className="font-bold text-sm text-foreground">Location A excels in</h4>
-                </div>
-                {insights.aWins.length > 0 ? (
-                  <ul className="space-y-2.5">
-                    {insights.aWins.map((metric, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-sm">
-                        <CheckCircle2 size={15} className="text-blue-500 shrink-0" />
-                        <span className="font-semibold text-foreground/80">{metric}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No clear advantages over Location B.</p>
-                )}
-              </div>
-
-              {/* Location B Advantages */}
-              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={18} className="text-violet-500" />
-                  <h4 className="font-bold text-sm text-foreground">Location B excels in</h4>
-                </div>
-                {insights.bWins.length > 0 ? (
-                  <ul className="space-y-2.5">
-                    {insights.bWins.map((metric, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-sm">
-                        <CheckCircle2 size={15} className="text-violet-500 shrink-0" />
-                        <span className="font-semibold text-foreground/80">{metric}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No clear advantages over Location A.</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Final Recommendation */}
-          {!isLoading && analysisA && analysisB && (
-            <div className="bg-gradient-to-r from-violet-500/5 to-blue-500/5 rounded-2xl border border-violet-200/50 dark:border-violet-900/30 p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
-                  <Zap size={20} className="text-violet-600 dark:text-violet-400" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground">Final Recommendation</h3>
-              </div>
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                {insights.winner === "A" && (
-                  <>
-                    <span className="font-black text-blue-600">Location A</span> is the stronger choice for a <span className="font-bold">{businessLabel}</span> with
-                    an overall suitability score of <span className="font-black">{analysisA.score}/100</span> vs <span className="font-black">{analysisB.score}/100</span>.
-                    {insights.aWins.length > 0 && ` It particularly excels in ${insights.aWins.join(", ")}.`}
-                    {insights.bWins.length > 0 && ` However, Location B has an edge in ${insights.bWins.join(", ")}, which may matter depending on your priorities.`}
-                  </>
-                )}
-                {insights.winner === "B" && (
-                  <>
-                    <span className="font-black text-violet-600">Location B</span> is the stronger choice for a <span className="font-bold">{businessLabel}</span> with
-                    an overall suitability score of <span className="font-black">{analysisB.score}/100</span> vs <span className="font-black">{analysisA.score}/100</span>.
-                    {insights.bWins.length > 0 && ` It particularly excels in ${insights.bWins.join(", ")}.`}
-                    {insights.aWins.length > 0 && ` However, Location A has an edge in ${insights.aWins.join(", ")}, which may matter depending on your priorities.`}
-                  </>
-                )}
-                {insights.winner === "Tie" && (
-                  <>
-                    Both locations scored equally at <span className="font-black">{analysisA.score}/100</span> for a <span className="font-bold">{businessLabel}</span>.
-                    The decision should be based on which individual metrics matter more for your specific use case.
-                    {insights.aWins.length > 0 && ` Location A leads in ${insights.aWins.join(", ")}`}
-                    {insights.bWins.length > 0 && `, while Location B leads in ${insights.bWins.join(", ")}.`}
-                  </>
-                )}
-              </p>
-            </div>
-          )}
-
         </div>
       </div>
+
     </div>
   );
+}
+
+interface CompareState {
+  locationA: [number, number];
+  locationB: [number, number];
+  businessType: string;
 }
