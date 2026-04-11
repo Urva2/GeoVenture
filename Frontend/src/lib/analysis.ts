@@ -50,8 +50,8 @@ export function generateAnalysis(lat: number, lng: number, businessType: string)
     { label: "Population Density", icon: "", value: pop },
     { label: "Road & Transit Access", icon: "", value: transit },
     { label: "Competition Index", icon: "", value: competition, inverted: true },
-    { label: "Risk Score", icon: "", value: risk, inverted: true },
-    { label: "Purchasing Power", icon: "", value: purchasing },
+    { label: "Water Ways", icon: "", value: risk, inverted: true },
+    { label: "Transportation", icon: "", value: purchasing },
   ];
 
   const effectiveScores = factors.map(f => f.inverted ? 100 - f.value : f.value);
