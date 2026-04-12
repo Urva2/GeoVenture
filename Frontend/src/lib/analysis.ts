@@ -6,6 +6,10 @@ export interface AnalysisResult {
     value: number;
     inverted?: boolean;
   }[];
+  alternatives?: {
+    type: string;
+    score: number;
+  }[];
   bestBusiness: {
     type: string;
     icon: string;
@@ -20,20 +24,14 @@ export interface AnalysisResult {
 }
 
 const BUSINESS_TYPES = [
-  { value: "accomodation", label: "Accomodation", icon: "" },
-  { value: "culture", label: "Culture & Arts", icon: "" },
-  { value: "education", label: "Education", icon: "" },
-  { value: "finance", label: "Finance & Banking", icon: "" },
-  { value: "food", label: "Food & Beverage", icon: "" },
-  { value: "health", label: "Health & Medical", icon: "" },
-  { value: "infra", label: "Infrastructure", icon: "" },
-  { value: "other", label: "Other", icon: "" },
-  { value: "outdoor", label: "Outdoor & Recreation", icon: "" },
-  { value: "public_service", label: "Public Service", icon: "" },
-  { value: "retail", label: "Retail", icon: "" },
-  { value: "sports", label: "Sports Facilities", icon: "" },
-  { value: "transport", label: "Transport & Logistics", icon: "" },
-  { value: "utility", label: "Utilities", icon: "" },
+  { value: "cafe", label: "Cafe / Restaurant", icon: "" },
+  { value: "retail", label: "Retail Store", icon: "" },
+  { value: "ev_station", label: "EV Charging Station", icon: "" },
+  { value: "warehouse", label: "Warehouse / Logistics", icon: "" },
+  { value: "healthcare", label: "Healthcare Clinic", icon: "" },
+  { value: "education", label: "Education Center", icon: "" },
+  { value: "gym", label: "Gym / Fitness Center", icon: "" },
+  { value: "bank", label: "Bank / ATM", icon: "" },
 ];
 
 export { BUSINESS_TYPES };

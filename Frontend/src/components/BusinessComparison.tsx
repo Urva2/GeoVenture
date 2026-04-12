@@ -14,30 +14,43 @@ interface BusinessComparisonProps {
   searchedBusinessValue?: string;
   searchedScore?: number;
   location?: [number, number];
+  alternatives?: { type: string; score: number }[];
 }
 
 export default function BusinessComparison({
   searchedBusinessValue = "",
   searchedScore = 0,
-  location = [0, 0]
+  location = [0, 0],
+  alternatives = []
 }: BusinessComparisonProps = {}) {
   
   const dynamicBusinesses = useMemo(() => {
-    // Generate true, mathematically consistent scores for ALL business types at this location
-    const allBusinesses = BUSINESS_TYPES.map(b => {
-      const isSearched = b.value === searchedBusinessValue;
-      // If it's the one currently being searched, use the supplied score to guarantee consistency.
-      // Otherwise, simulate what its score would be if it were searched.
-      const score = (isSearched && searchedScore > 0) 
-        ? searchedScore 
-        : generateAnalysis(location[0], location[1], b.value).score;
+    let allBusinesses: BusinessComparisonItem[] = [];
 
-      return {
-        name: b.label,
-        score,
-        isSearched
-      };
-    });
+    if (alternatives && alternatives.length > 0) {
+       allBusinesses = alternatives.map(alt => {
+          const businessInfo = BUSINESS_TYPES.find(b => b.value === alt.type);
+          return {
+              name: businessInfo ? businessInfo.label : alt.type,
+              score: alt.score,
+              isSearched: alt.type === searchedBusinessValue
+          };
+       });
+    } else {
+        // Generate true, mathematically consistent scores for ALL business types at this location
+        allBusinesses = BUSINESS_TYPES.map(b => {
+          const isSearched = b.value === searchedBusinessValue;
+          const score = (isSearched && searchedScore > 0) 
+            ? searchedScore 
+            : generateAnalysis(location[0], location[1], b.value).score;
+
+          return {
+            name: b.label,
+            score,
+            isSearched
+          };
+        });
+    }
 
     // Sort all businesses by score descending
     allBusinesses.sort((a, b) => b.score - a.score);
@@ -57,7 +70,7 @@ export default function BusinessComparison({
     }
 
     return top5;
-  }, [searchedBusinessValue, searchedScore, location]);
+  }, [searchedBusinessValue, searchedScore, location, alternatives]);
   const getStatus = (score: number) => {
     if (score >= 80) return "Recommended";
     if (score >= 50) return "Moderate";

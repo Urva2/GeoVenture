@@ -105,21 +105,78 @@ def read_root():
     return {"message": "Welcome to GeoVenture Backend API!"}
 
 CATEGORY_WEIGHTS = {
-    #                                Road,  POFW,  Transport, Traffic, POI,   Population
-    "accomodation":   {"road": 0.20, "pofw": 0.05, "transport": 0.20, "traffic": 0.10, "poi": 0.30, "pop": 0.15},
-    "culture":        {"road": 0.15, "pofw": 0.05, "transport": 0.25, "traffic": 0.10, "poi": 0.25, "pop": 0.20},
-    "education":      {"road": 0.15, "pofw": 0.05, "transport": 0.25, "traffic": 0.10, "poi": 0.15, "pop": 0.30},
-    "finance":        {"road": 0.15, "pofw": 0.05, "transport": 0.20, "traffic": 0.15, "poi": 0.30, "pop": 0.15},
-    "food":           {"road": 0.20, "pofw": 0.05, "transport": 0.15, "traffic": 0.20, "poi": 0.25, "pop": 0.15},
-    "health":         {"road": 0.25, "pofw": 0.05, "transport": 0.25, "traffic": 0.10, "poi": 0.10, "pop": 0.25},
-    "infra":          {"road": 0.30, "pofw": 0.20, "transport": 0.30, "traffic": 0.10, "poi": 0.05, "pop": 0.05},
-    "other":          {"road": 0.15, "pofw": 0.05, "transport": 0.20, "traffic": 0.20, "poi": 0.20, "pop": 0.20},
-    "outdoor":        {"road": 0.15, "pofw": 0.30, "transport": 0.15, "traffic": 0.05, "poi": 0.15, "pop": 0.20},
-    "public_service": {"road": 0.20, "pofw": 0.05, "transport": 0.20, "traffic": 0.15, "poi": 0.15, "pop": 0.25},
-    "retail":         {"road": 0.20, "pofw": 0.05, "transport": 0.15, "traffic": 0.20, "poi": 0.20, "pop": 0.20},
-    "sports":         {"road": 0.20, "pofw": 0.05, "transport": 0.15, "traffic": 0.10, "poi": 0.20, "pop": 0.30},
-    "transport":      {"road": 0.40, "pofw": 0.05, "transport": 0.25, "traffic": 0.20, "poi": 0.05, "pop": 0.05},
-    "utility":        {"road": 0.25, "pofw": 0.20, "transport": 0.20, "traffic": 0.10, "poi": 0.05, "pop": 0.20},
+    "cafe": {
+        "population_pct": 0.25,
+        "traffic_pct": 0.20,
+        "poi_pct": 0.25,
+        "road_pct": 0.10,
+        "transport_pct": 0.10,
+        "pofw_pct": 0.05,
+        "competition": -0.10
+    },
+    "retail": {
+        "population_pct": 0.30,
+        "poi_pct": 0.25,
+        "traffic_pct": 0.20,
+        "road_pct": 0.10,
+        "transport_pct": 0.10,
+        "pofw_pct": 0.05,
+        "competition": -0.10
+    },
+    "ev_station": {
+        "traffic_pct": 0.30,
+        "road_pct": 0.25,
+        "transport_pct": 0.20,
+        "population_pct": 0.10,
+        "poi_pct": 0.05,
+        "pofw_pct": 0.05,
+        "competition": -0.05
+    },
+    "warehouse": {
+        "road_pct": 0.30,
+        "transport_pct": 0.25,
+        "pofw_pct": 0.15,
+        "traffic_pct": 0.10,
+        "competition": -0.10,
+        "population_pct": -0.05,
+        "poi_pct": -0.05
+    },
+    "healthcare": {
+        "population_pct": 0.30,
+        "transport_pct": 0.20,
+        "road_pct": 0.15,
+        "traffic_pct": 0.10,
+        "poi_pct": 0.10,
+        "pofw_pct": 0.10,
+        "competition": -0.05
+    },
+    "education": {
+        "population_pct": 0.30,
+        "transport_pct": 0.20,
+        "road_pct": 0.15,
+        "poi_pct": 0.10,
+        "pofw_pct": 0.10,
+        "traffic_pct": 0.05,
+        "competition": -0.05
+    },
+    "gym": {
+        "population_pct": 0.25,
+        "traffic_pct": 0.15,
+        "poi_pct": 0.15,
+        "road_pct": 0.15,
+        "transport_pct": 0.15,
+        "pofw_pct": 0.10,
+        "competition": -0.05
+    },
+    "bank": {
+        "population_pct": 0.25,
+        "transport_pct": 0.20,
+        "road_pct": 0.15,
+        "traffic_pct": 0.10,
+        "poi_pct": 0.10,
+        "pofw_pct": 0.10,
+        "competition": -0.10
+    }
 }
 
 @app.get("/api/analyze")
@@ -169,22 +226,43 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
         poi_pct = safe_score(db_data.get('poi_pct', 0))
         pop_pct = safe_score(db_data.get('population_pct', 0))
         
-        weights = CATEGORY_WEIGHTS.get(business_type, CATEGORY_WEIGHTS["other"])
+        weights = CATEGORY_WEIGHTS.get(business_type, CATEGORY_WEIGHTS["cafe"])
         
         # Calculate dynamic final score based on requested weight profile
-        overall_score = int(
-            (road_pct * weights["road"]) +
-            (pofw_pct * weights["pofw"]) +
-            (transport_pct * weights["transport"]) +
-            (traffic_pct * weights["traffic"]) +
-            (poi_pct * weights["poi"]) +
-            (pop_pct * weights["pop"])
+        raw_score = (
+            (road_pct * weights.get("road_pct", 0)) +
+            (pofw_pct * weights.get("pofw_pct", 0)) +
+            (transport_pct * weights.get("transport_pct", 0)) +
+            (traffic_pct * weights.get("traffic_pct", 0)) +
+            (poi_pct * weights.get("poi_pct", 0)) +
+            (pop_pct * weights.get("population_pct", 0)) +
+            (50 * weights.get("competition", 0)) # Fixed penalty multiplier against the negative weight
         )
+        
+        overall_score = max(0, min(100, int(raw_score))) # Prevent mathematically impossible scores
+        
+        alternatives = []
+        for b_type, b_weights in CATEGORY_WEIGHTS.items():
+            b_raw = (
+                (road_pct * b_weights.get("road_pct", 0)) +
+                (pofw_pct * b_weights.get("pofw_pct", 0)) +
+                (transport_pct * b_weights.get("transport_pct", 0)) +
+                (traffic_pct * b_weights.get("traffic_pct", 0)) +
+                (poi_pct * b_weights.get("poi_pct", 0)) +
+                (pop_pct * b_weights.get("population_pct", 0)) +
+                (50 * b_weights.get("competition", 0))
+            )
+            b_score = max(0, min(100, int(b_raw)))
+            alternatives.append({"type": b_type, "score": b_score})
+            
+        # Sort top descending so frontend doesn't have to work as hard
+        alternatives = sorted(alternatives, key=lambda x: x["score"], reverse=True)
         
     else:
         # Emergency Default Fallback Array
         road_pct = 45; pofw_pct = 45; transport_pct = 45; traffic_pct = 45; poi_pct = 45; pop_pct = 45
         overall_score = 45 
+        alternatives = []
 
     # 4. Map directly to Frontend Format dynamically
     factors = [
@@ -202,6 +280,7 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
         "business_type": business_type,
         "score": overall_score,
         "factors": factors,
+        "alternatives": alternatives,
         "bestBusiness": {
             "type": "EV Charging Station",
             "icon": "⚡",

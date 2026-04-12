@@ -148,6 +148,7 @@ export default function Analysis() {
                 searchedBusinessValue={businessType} 
                 searchedScore={analysis.score} 
                 location={location} 
+                alternatives={analysis.alternatives}
               />
             )}
           </div>
