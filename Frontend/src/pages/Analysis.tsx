@@ -5,9 +5,12 @@ import ModernLocationAnalytics from "@/components/ModernLocationAnalytics";
 import BusinessComparison from "@/components/BusinessComparison";
 import AnalysisMap from "@/components/AnalysisMap";
 import { type AnalysisResult, generateAnalysis } from "@/lib/analysis";
+import { AlertCircle } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 interface AnalysisLocationState {
   location: [number, number];
+  locationName?: string;
   businessType: string;
   analysis?: AnalysisResult;
 }
@@ -26,7 +29,7 @@ export default function Analysis() {
 
   useEffect(() => {
     if (!state || !state.location || !state.businessType) return;
-    
+
     // If analysis was already passed, don't refetch
     if (state.analysis) {
       setAnalysis(state.analysis);
@@ -39,20 +42,20 @@ export default function Analysis() {
     const fetchData = async () => {
       const { location, businessType } = state;
       setIsLoading(true);
-      
+
       try {
         const url = `http://127.0.0.1:8000/api/analyze?lat=${location[0]}&lng=${location[1]}&business_type=${businessType}`;
         const response = await fetch(url);
-        
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Short UX delay so loading skeleton isn't jarring on fast local networks
         await new Promise(resolve => setTimeout(resolve, 800));
-        
+
         if (isMounted) {
           setAnalysis(data); // Inject the REAL database ML response into UI!
           setIsLoading(false);
@@ -106,22 +109,25 @@ export default function Analysis() {
         {/* Left Panel - Modern Dashboard (45%) */}
         <div className="w-[45%] flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1 relative">
           {isLoading || !analysis ? (
-             <div className="flex flex-col gap-4 absolute inset-0 pr-1 transition-opacity duration-500 opacity-100">
-               <div className="bg-card rounded-2xl border border-border p-6 h-[220px] flex flex-col items-center justify-center gap-4">
-                 <Skeleton className="w-[120px] h-[120px] rounded-full" />
-                 <Skeleton className="w-1/3 h-5" />
-               </div>
-               <div className="bg-card rounded-2xl border border-border p-6 flex-1 min-h-[300px]">
-                 <Skeleton className="w-1/2 h-6 mb-8" />
-                 <div className="space-y-4">
-                   {[1, 2, 3, 4].map(i => (
-                     <Skeleton key={i} className="w-full h-[60px] rounded-xl" />
-                   ))}
-                 </div>
-               </div>
-             </div>
+            <div className="flex flex-col gap-4 absolute inset-0 pr-1 transition-opacity duration-500 opacity-100">
+              <div className="bg-card rounded-2xl border border-border p-6 h-[220px] flex flex-col items-center justify-center gap-4">
+                <Skeleton className="w-[120px] h-[120px] rounded-full" />
+                <Skeleton className="w-1/3 h-5" />
+              </div>
+              <div className="bg-card rounded-2xl border border-border p-6 flex-1 min-h-[300px]">
+                <Skeleton className="w-1/2 h-6 mb-8" />
+                <div className="space-y-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} className="w-full h-[60px] rounded-xl" />
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : (
-             <ModernLocationAnalytics analysisResult={analysis} />
+            <ModernLocationAnalytics
+              analysisResult={analysis}
+              locationName={state.locationName}
+            />
           )}
         </div>
 
@@ -136,20 +142,30 @@ export default function Analysis() {
           <div className="flex-[2] min-h-0 relative">
             {isLoading || !analysis ? (
               <div className="bg-card absolute inset-0 rounded-2xl border border-border p-6 flex flex-col transition-opacity duration-500 opacity-100">
-                 <Skeleton className="w-[200px] h-6 mb-8" />
-                 <div className="flex-1 flex items-end gap-4 overflow-hidden pt-4">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                       <Skeleton key={i} className="flex-1 rounded-t-xl" style={{ height: `${Math.floor(Math.random() * 60 + 20)}%` }} />
-                    ))}
-                 </div>
+                <Skeleton className="w-[200px] h-6 mb-8" />
+                <div className="flex-1 flex items-end gap-4 overflow-hidden pt-4">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <Skeleton key={i} className="flex-1 rounded-t-xl" style={{ height: `${Math.floor(Math.random() * 60 + 20)}%` }} />
+                  ))}
+                </div>
               </div>
-            ) : (
-              <BusinessComparison 
-                searchedBusinessValue={businessType} 
-                searchedScore={analysis.score} 
-                location={location} 
+            ) : analysis.score > 0 ? (
+              <BusinessComparison
+                searchedBusinessValue={businessType}
+                searchedScore={analysis.score}
+                location={location}
                 alternatives={analysis.alternatives}
               />
+            ) : (
+              <Card className="h-full flex flex-col items-center justify-center bg-card border-border shadow-sm p-6 text-center animate-in fade-in duration-500">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4 text-muted-foreground ring-8 ring-muted/20">
+                  <AlertCircle size={24} />
+                </div>
+                <h2 className="text-base font-bold text-foreground mb-1">Comparison Unavailable</h2>
+                <p className="text-xs text-muted-foreground max-w-[240px] leading-relaxed">
+                  The overall viability score for this location is 0. Alternative business comparisons are only available for areas with measurable activity.
+                </p>
+              </Card>
             )}
           </div>
         </div>

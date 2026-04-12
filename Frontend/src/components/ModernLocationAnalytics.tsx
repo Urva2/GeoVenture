@@ -8,7 +8,8 @@ import {
   BarChart2, Focus, ChevronDown, ChevronUp, CheckCircle2, Info,
   Waves,
   Truck,
-  Route
+  Route,
+  MapPin
 } from 'lucide-react';
 
 import { type AnalysisResult } from "@/lib/analysis";
@@ -33,10 +34,12 @@ const MOCK_METRICS: MetricData[] = [
 
 export default function ModernLocationAnalytics({
   data = MOCK_METRICS,
-  analysisResult
+  analysisResult,
+  locationName
 }: {
   data?: MetricData[],
-  analysisResult?: AnalysisResult
+  analysisResult?: AnalysisResult,
+  locationName?: string
 }) {
   const [viewType, setViewType] = useState<'bar' | 'radar'>('radar');
   const [sortMode, setSortMode] = useState<'default' | 'worst' | 'best'>('default');
@@ -132,12 +135,19 @@ export default function ModernLocationAnalytics({
     <div className="w-full max-w-4xl mx-auto rounded-2xl bg-card border border-border shadow-sm overflow-hidden flex flex-col font-sans transition-all duration-300">
 
       {/* Header & Score Section */}
-      <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-border/40">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">Location Profile</h2>
+      <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/40 bg-gradient-to-r from-card to-muted/10">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 mb-1">
+            <span className="text-[9px] font-black text-primary uppercase tracking-widest">AI Analysis Report</span>
           </div>
-          <p className="text-sm text-muted-foreground">Comprehensive analysis of site viability metrics.</p>
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shadow-sm">
+                <MapPin size={22} className="opacity-80" />
+             </div>
+             <h2 className="text-3xl font-black tracking-tight text-foreground leading-none">
+               {locationName || "Location Profile"}
+             </h2>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 bg-background p-4 rounded-xl border border-border/60 shadow-sm shrink-0">
@@ -321,17 +331,6 @@ export default function ModernLocationAnalytics({
         )}
       </div>
 
-      {/* Bottom Recommendation */}
-      <div className="bg-primary/5 p-6 md:p-8 border-t border-primary/10">
-        <h4 className="text-sm font-bold text-primary mb-2 flex items-center gap-2">
-          Actionable Recommendation
-        </h4>
-        <p className="text-sm text-foreground/80 leading-relaxed">
-          {analysisResult && strengths.length > 0
-            ? `The location shows exceptional ${strengths.join(' and ')}, making it highly viable. ${weaknesses.length > 0 ? `However, the ${weaknesses.join(' and ')} necessitates a strong strategy to mitigate potential risks.` : ''}`
-            : 'The location shows exceptional Purchasing Power and solid Population Density, making it highly viable for premium offerings. However, the saturated Competition necessitates a strong edge in branding or unique product offerings to capture market share.'}
-        </p>
-      </div>
 
     </div>
   );

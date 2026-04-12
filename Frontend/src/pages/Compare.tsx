@@ -7,7 +7,7 @@ import {
 import {
   ArrowLeft, Users, Car, Building2, Waves, Route,
   Check, Plus, ArrowLeftRight, Crown,
-  Zap, TrendingUp
+  Zap, TrendingUp, Trophy, BarChart3, Info, Lightbulb
 } from "lucide-react";
 import { type AnalysisResult, compareLocations, BUSINESS_TYPES } from "@/lib/analysis";
 import { Badge } from "@/components/ui/badge";
@@ -35,34 +35,51 @@ const InsightCard = ({
   description,
   metrics,
   colorClass,
-  icon: Icon
+  icon: Icon,
+  isRecommended = false
 }: {
   title: string;
   description: string;
   metrics: string[];
   colorClass: string;
   icon: any;
+  isRecommended?: boolean;
 }) => (
-  <div className="bg-white/70 backdrop-blur-md rounded-xl border border-gray-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-[2px] transition-all duration-300 flex flex-col h-full group">
+  <div className={cn(
+    "bg-white/70 backdrop-blur-md rounded-xl border p-4 shadow-sm transition-all duration-300 flex flex-col h-full group",
+    isRecommended 
+      ? "border-emerald-200/60 shadow-emerald-500/5 ring-1 ring-emerald-500/10" 
+      : "border-gray-200/60 hover:shadow-md hover:-translate-y-[2px]"
+  )}>
     <div className="flex items-center gap-2.5 mb-2">
       <div className={cn("p-2 rounded-lg transition-colors", colorClass)}>
-        <Icon className="w-5 h-5" />
+        <Icon className={cn("w-5 h-5", isRecommended && "animate-pulse")} />
       </div>
-      <h4 className="font-extrabold text-sm text-slate-800 tracking-wide uppercase">{title}</h4>
+      <div>
+        <h4 className="font-extrabold text-[10px] text-slate-400 tracking-[0.15em] uppercase leading-none mb-1">
+          {isRecommended ? "Winning Insight" : "Comparative Insight"}
+        </h4>
+        <h3 className="font-black text-sm text-slate-800 tracking-tight">{title}</h3>
+      </div>
     </div>
-    <p className="text-xs text-slate-500 mb-3 ml-0.5 font-medium leading-relaxed">{description}</p>
-    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 mt-auto">
-      {metrics.length > 0 ? metrics.map((m, i) => (
-        <Badge
-          key={i}
-          variant="secondary"
-          className="px-3.5 py-1.5 bg-gray-200/60 text-slate-600 border-none rounded-full text-xs font-bold uppercase tracking-wider transition-all hover:bg-gray-300 cursor-default"
-        >
-          {m}
-        </Badge>
-      )) : (
-        <p className="text-xs text-slate-400 italic font-medium py-1">No specific advantages identified yet.</p>
-      )}
+    <p className="text-xs text-slate-500 mb-4 ml-0.5 font-medium leading-relaxed">{description}</p>
+    <div className="space-y-2 mt-auto">
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Key Strengths</p>
+      <div className="flex flex-wrap gap-2">
+        {metrics.length > 0 ? metrics.map((m, i) => (
+          <Badge
+            key={i}
+            variant="secondary"
+            className="px-3.5 py-1.5 bg-gray-200/60 text-slate-600 border-none rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:bg-gray-300 cursor-default"
+          >
+            {m}
+          </Badge>
+        )) : (
+          <p className="text-[11px] text-slate-400 italic font-medium py-1 ml-0.5">
+            No significant competitive advantages identified.
+          </p>
+        )}
+      </div>
     </div>
   </div>
 );
@@ -116,11 +133,11 @@ export default function Compare() {
       const label = fA.label.replace(" Access", "").replace(" Index", "");
       return {
         name: label,
-        "Location A": effA,
-        "Location B": effB,
+        [state.nameA || "Location A"]: effA,
+        [state.nameB || "Location B"]: effB,
       };
     });
-  }, [analysisA, analysisB]);
+  }, [analysisA, analysisB, state]);
 
   const insights = useMemo(() => {
     if (!analysisA || !analysisB || chartData.length === 0) return { aWins: [], bWins: [], winner: "" };
@@ -141,14 +158,28 @@ export default function Compare() {
     // Fallback to frontend comparison if backend insights are empty
     if (aWins.length === 0 && bWins.length === 0) {
         chartData.forEach((d: any) => {
-            if (d["Location A"] > d["Location B"] + 10) aWins.push(d.name);
-            else if (d["Location B"] > d["Location A"] + 10) bWins.push(d.name);
-        });
+      if (d[state.nameA || "Location A"] > d[state.nameB || "Location B"] + 10) aWins.push(d.name);
+      else if (d[state.nameB || "Location B"] > d[state.nameA || "Location A"] + 10) bWins.push(d.name);
+    });
     }
 
     const winner = analysisA.score > analysisB.score ? "A" : analysisA.score < analysisB.score ? "B" : "Tie";
-    return { aWins, bWins, winner };
-  }, [analysisA, analysisB, chartData, backendInsights]);
+    
+    // Build Decision-Support Wording
+    const nameA = state.nameA || "Location A";
+    const nameB = state.nameB || "Location B";
+    
+    const wording = {
+        recommended: winner === "A" ? nameA : nameB,
+        alternative: winner === "A" ? nameB : nameA,
+        recommendedWins: winner === "A" ? aWins : bWins,
+        alternativeWins: winner === "A" ? bWins : aWins,
+        descriptionRecommended: `${winner === "A" ? nameA : nameB} outperforms ${winner === "A" ? nameB : nameA} in critical factors such as demand density, accessibility, and ecosystem support, making it the optimal choice for this business type.`,
+        descriptionAlternative: `${winner === "A" ? nameB : nameA} performs comparatively lower across key indicators and may require additional strategic advantages to be viable.`
+    };
+
+    return { aWins, bWins, winner, wording };
+  }, [analysisA, analysisB, chartData, backendInsights, state]);
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-emerald-600";
@@ -217,8 +248,10 @@ export default function Compare() {
               )}
               <div className="flex justify-between items-start mb-3 border-b border-gray-100 pb-2">
                 <div>
-                  <p className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">Location A</p>
-                  <p className="text-xs text-slate-400 font-mono mt-1.5">{locALabel}</p>
+                    <p className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">
+                      {state.nameA || "Location A"}
+                    </p>
+                    <p className="text-xs text-slate-400 font-mono mt-1.5">{locALabel}</p>
                 </div>
               </div>
               {isLoading ? (
@@ -264,8 +297,10 @@ export default function Compare() {
               )}
               <div className="flex justify-between items-start mb-3 border-b border-gray-100 pb-2">
                 <div>
-                  <p className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">Location B</p>
-                  <p className="text-xs text-slate-400 font-mono mt-1.5">{locBLabel}</p>
+                    <p className="text-sm font-black text-slate-800 uppercase tracking-widest leading-none">
+                      {state.nameB || "Location B"}
+                    </p>
+                    <p className="text-xs text-slate-400 font-mono mt-1.5">{locBLabel}</p>
                 </div>
               </div>
               {isLoading ? (
@@ -365,12 +400,12 @@ export default function Compare() {
                         iconType="circle"
                         wrapperStyle={{ paddingBottom: 10, fontSize: 8, fontWeight: 800, textTransform: 'uppercase' }}
                       />
-                      <Bar name="A" dataKey="Location A" fill="#3b82f6" radius={[4, 4, 0, 0]} animationDuration={1000} animationEasing="ease-out">
+                      <Bar name={state.nameA || "A"} dataKey={state.nameA || "Location A"} fill="#3b82f6" radius={[4, 4, 0, 0]} animationDuration={1000} animationEasing="ease-out">
                         {chartData.map((_entry, index) => (
                           <Cell key={`cell-a-${index}`} className="hover:opacity-80 transition-opacity cursor-pointer duration-300" />
                         ))}
                       </Bar>
-                      <Bar name="B" dataKey="Location B" fill="#8b5cf6" radius={[4, 4, 0, 0]} animationDuration={1000} animationEasing="ease-out" animationBegin={200}>
+                      <Bar name={state.nameB || "B"} dataKey={state.nameB || "Location B"} fill="#8b5cf6" radius={[4, 4, 0, 0]} animationDuration={1000} animationEasing="ease-out" animationBegin={200}>
                         {chartData.map((_entry, index) => (
                           <Cell key={`cell-b-${index}`} className="hover:opacity-80 transition-opacity cursor-pointer duration-300" />
                         ))}
@@ -384,19 +419,26 @@ export default function Compare() {
             {/* Insights Column (30%) */}
             <div className="flex flex-col gap-3 shrink-0">
                <InsightCard 
-                  title="Location A Wins" 
-                  description="Metrics where Location A outperforms in competitiveness and accessibility."
-                  metrics={insights.aWins} 
-                  colorClass="bg-blue-50 text-blue-600"
-                  icon={TrendingUp}
+                  title={`🏆 Recommended Location: ${insights.wording?.recommended}`} 
+                  description={insights.wording?.descriptionRecommended || ""}
+                  metrics={insights.wording?.recommendedWins || []} 
+                  colorClass="bg-emerald-50 text-emerald-600"
+                  icon={Trophy}
+                  isRecommended={true}
                />
                <InsightCard 
-                  title="Location B Wins" 
-                  description="Metrics where Location B shows superior performance and potential."
-                  metrics={insights.bWins} 
-                  colorClass="bg-purple-50 text-purple-600"
-                  icon={TrendingUp}
+                  title={`📊 Alternative Location: ${insights.wording?.alternative}`} 
+                  description={insights.wording?.descriptionAlternative || ""}
+                  metrics={insights.wording?.alternativeWins || []} 
+                  colorClass="bg-slate-100 text-slate-600"
+                  icon={BarChart3}
                />
+               
+               {/* Decision Engine Footer */}
+               <div className="mt-auto pt-2 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] px-1 italic">
+                  <Lightbulb className="w-3 h-3 text-amber-500" />
+                  <span>Recommendation based on weighted analysis of geospatial factors.</span>
+               </div>
             </div>
           </div>
         </div>
@@ -408,6 +450,8 @@ export default function Compare() {
 
 interface CompareState {
   locationA: [number, number];
+  nameA?: string;
   locationB: [number, number];
+  nameB?: string;
   businessType: string;
 }

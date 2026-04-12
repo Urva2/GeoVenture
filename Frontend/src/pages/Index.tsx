@@ -4,19 +4,22 @@ import SidebarPanel from "@/components/SidebarPanel";
 
 export default function Index() {
   const [clickedLocation, setClickedLocation] = useState<[number, number] | null>(null);
+  const [clickedLocationName, setClickedLocationName] = useState<string | null>(null);
   const [betterLocation, setBetterLocation] = useState<[number, number] | null>(null);
   const [showBetter, setShowBetter] = useState(false);
 
-  const handleLocationClick = useCallback((lat: number, lng: number) => {
+  const handleLocationClick = useCallback((lat: number, lng: number, name?: string) => {
     setClickedLocation([lat, lng]);
+    setClickedLocationName(name || null);
     setShowBetter(false);
     setBetterLocation(null);
   }, []);
 
-  const handleJumpToLocation = useCallback((lat: number, lng: number) => {
+  const handleJumpToLocation = useCallback((lat: number, lng: number, name?: string) => {
     setBetterLocation([lat, lng]);
     setShowBetter(true);
     setClickedLocation([lat, lng]);
+    setClickedLocationName(name || "Recommended Location");
   }, []);
 
   return (
@@ -52,7 +55,7 @@ export default function Index() {
 
         {/* Sidebar - 35% */}
         <div className="w-[35%] h-full rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-border overflow-hidden bg-card z-10 hover:-translate-y-0.5">
-          <SidebarPanel clickedLocation={clickedLocation} />
+          <SidebarPanel clickedLocation={clickedLocation} clickedLocationName={clickedLocationName} />
         </div>
       </div>
     </div>

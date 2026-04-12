@@ -17,7 +17,7 @@ const defaultIcon = L.icon({
 });
 
 interface MapPanelProps {
-  onLocationClick: (lat: number, lng: number) => void;
+  onLocationClick: (lat: number, lng: number, name?: string) => void;
   clickedLocation: [number, number] | null;
   betterLocation: [number, number] | null;
   showBetter: boolean;
@@ -41,7 +41,7 @@ function createRecommendedIcon() {
   });
 }
 
-function ClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
+function ClickHandler({ onClick }: { onClick: (lat: number, lng: number, name?: string) => void }) {
   useMapEvents({
     click(e) {
       onClick(e.latlng.lat, e.latlng.lng);
@@ -64,7 +64,6 @@ const INDIA_BOUNDS: L.LatLngBoundsExpression = [
 ];
 
 export default function MapPanel({ onLocationClick, clickedLocation, betterLocation, showBetter }: MapPanelProps) {
-  const [showHint, setShowHint] = useState(true);
   const [panTarget, setPanTarget] = useState<[number, number] | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [indiaGeoJson, setIndiaGeoJson] = useState<any>(null);
@@ -117,18 +116,16 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
       handleInvalidLocation(lat, lng);
       return; // Ignore the click
     }
-    setShowHint(false);
     onLocationClick(lat, lng);
   };
 
-  const handleSearchSelect = (lat: number, lng: number) => {
+  const handleSearchSelect = (lat: number, lng: number, name: string) => {
     if (!isInsideIndia(lat, lng)) {
       handleInvalidLocation(lat, lng);
       return;
     }
     setPanTarget([lat, lng]);
-    onLocationClick(lat, lng);
-    setShowHint(false);
+    onLocationClick(lat, lng, name);
   };
 
   return (
@@ -203,7 +200,6 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
                   
                   setPanTarget([lat, lng]);
                   onLocationClick(lat, lng);
-                  setShowHint(false);
                   setIsLocating(false);
                 },
                 (error) => {
@@ -231,11 +227,6 @@ export default function MapPanel({ onLocationClick, clickedLocation, betterLocat
         <LocationSearch onLocationSelect={handleSearchSelect} />
       </div>
 
-      {showHint && (
-        <div className="absolute top-[88px] left-1/2 -translate-x-1/2 z-[1000] bg-background/80 backdrop-blur-md rounded-full px-5 py-2.5 border border-border shadow-sm text-sm font-medium text-foreground text-center pointer-events-none transition-all duration-500 animate-in fade-in slide-in-from-top-4">
-          Click anywhere within India to analyze location
-        </div>
-      )}
 
       {clickedLocation && (
         <div className="absolute bottom-6 left-6 z-[1000] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl text-foreground px-4 py-3.5 rounded-2xl border border-border/50 shadow-xl flex items-center gap-3 transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-2">

@@ -229,8 +229,8 @@ def _score_from_db_data(db_data, lat=None, lng=None, business_type="other", h3_i
         
     else:
         # Fallback values if no DB data exists
-        road_pct = 45; pofw_pct = 45; transport_pct = 45; traffic_pct = 45; poi_pct = 45; pop_pct = 45
-        overall_score = 45 
+        road_pct = 0; pofw_pct = 0; transport_pct = 0; traffic_pct = 0; poi_pct = 0; pop_pct = 0
+        overall_score = 0
         alternatives = []
 
     # 4. Map directly to Frontend Format

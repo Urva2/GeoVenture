@@ -23,6 +23,8 @@ export default function BusinessComparison({
   location = [0, 0],
   alternatives = []
 }: BusinessComparisonProps = {}) {
+  // Safety check: if searchedScore is 0, we don't want to show any comparisons
+  if (searchedScore === 0) return null;
   
   const dynamicBusinesses = useMemo(() => {
     let allBusinesses: BusinessComparisonItem[] = [];

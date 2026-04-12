@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, MapPin, Loader2, X } from "lucide-react";
 
 interface LocationSearchProps {
-  onLocationSelect: (lat: number, lng: number) => void;
+  onLocationSelect: (lat: number, lng: number, name: string) => void;
   compact?: boolean;
   placeholder?: string;
 }
@@ -103,9 +103,10 @@ export default function LocationSearch({ onLocationSelect, compact = false, plac
   }, [query]);
 
   const handleSelect = (suggestion: Suggestion) => {
-    setQuery(suggestion.display_name.split(",")[0].trim()); // Just set the main name
+    const mainName = suggestion.display_name.split(",")[0].trim();
+    setQuery(mainName);
     setIsOpen(false);
-    onLocationSelect(parseFloat(suggestion.lat), parseFloat(suggestion.lon));
+    onLocationSelect(parseFloat(suggestion.lat), parseFloat(suggestion.lon), mainName);
   };
 
   const handleManualSearch = async () => {

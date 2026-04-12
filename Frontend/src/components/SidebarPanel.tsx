@@ -6,15 +6,18 @@ import LocationSearch from "./LocationSearch";
 
 interface SidebarPanelProps {
   clickedLocation: [number, number] | null;
+  clickedLocationName?: string | null;
 }
 
-export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
+export default function SidebarPanel({ clickedLocation, clickedLocationName }: SidebarPanelProps) {
   const navigate = useNavigate();
   const [businessType, setBusinessType] = useState("cafe");
 
   // Compare state
   const [compareLocationA, setCompareLocationA] = useState<[number, number] | null>(null);
+  const [compareNameA, setCompareNameA] = useState("Location A");
   const [compareLocationB, setCompareLocationB] = useState<[number, number] | null>(null);
+  const [compareNameB, setCompareNameB] = useState("Location B");
   const [compareBusinessType, setCompareBusinessType] = useState("cafe");
 
   const handleAnalyze = () => {
@@ -22,6 +25,7 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
     navigate("/analysis", {
       state: {
         location: clickedLocation,
+        locationName: clickedLocationName,
         businessType,
       },
     });
@@ -32,7 +36,9 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
     navigate("/compare", {
       state: {
         locationA: compareLocationA,
+        nameA: compareNameA,
         locationB: compareLocationB,
+        nameB: compareNameB,
         businessType: compareBusinessType,
       },
     });
@@ -129,7 +135,10 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
             <LocationSearch
               compact
               placeholder="Enter first location..."
-              onLocationSelect={(lat, lng) => setCompareLocationA([lat, lng])}
+              onLocationSelect={(lat, lng, name) => {
+                setCompareLocationA([lat, lng]);
+                setCompareNameA(name);
+              }}
             />
             {compareLocationA && (
               <p className="text-[10px] text-emerald-600 font-semibold mt-1 ml-1">
@@ -144,7 +153,10 @@ export default function SidebarPanel({ clickedLocation }: SidebarPanelProps) {
             <LocationSearch
               compact
               placeholder="Enter second location..."
-              onLocationSelect={(lat, lng) => setCompareLocationB([lat, lng])}
+              onLocationSelect={(lat, lng, name) => {
+                setCompareLocationB([lat, lng]);
+                setCompareNameB(name);
+              }}
             />
             {compareLocationB && (
               <p className="text-[10px] text-emerald-600 font-semibold mt-1 ml-1">
