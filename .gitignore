@@ -35,6 +35,7 @@ htmlcov/
 .env.test.local
 .env.production.local
 *.local
+Backend/config/db_config.py
 
 # Editor directories and files
 .vscode/*

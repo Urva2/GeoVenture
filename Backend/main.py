@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 import h3
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from config.db_config import DB_CONFIG
 
 # Initialize the FastAPI application
 app = FastAPI(title="GeoVenture API", description="Backend for location intelligence", version="1.0.0", docs_url=None)
@@ -24,13 +25,7 @@ app.add_middleware(
 def get_db():
     conn = None
     try:
-        conn = psycopg2.connect(
-            host="localhost",
-            database="Geo-Venture",       # <-- Change to your PostgreSQL database name
-            user="postgres",         # <-- Change to your PostgreSQL username
-            password="Urv@3214", # <-- Change to your PostgreSQL password
-            port="5432"
-        )
+        conn = psycopg2.connect(**DB_CONFIG)
         # Yield gives the connection to the API route, then pauses.
         print("sdflkdjfsjskfldjkjljl")
         yield conn

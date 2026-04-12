@@ -7,15 +7,7 @@
 import psycopg2
 
 # =========================
-# CONFIG
-# =========================
-DB_CONFIG = {
-    "dbname": "Geo-Venture",
-    "user": "postgres",
-    "password": "Urv@3214",
-    "host": "localhost",
-    "port": "5432"
-}
+from config.db_config import DB_CONFIG
 
 CSV_PATH = r'C:\Users\ASUS\Downloads\business_score_poi_wise.csv'
 
