@@ -94,3 +94,28 @@ export function generateAnalysis(lat: number, lng: number, businessType: string)
     riskFlags,
   };
 }
+
+export async function compareLocations(
+  hex1?: string, 
+  hex2?: string, 
+  businessType: string = "cafe",
+  lat1?: number,
+  lng1?: number,
+  lat2?: number,
+  lng2?: number
+) {
+  let url = `http://localhost:8000/api/compare?business_type=${businessType}`;
+  if (hex1) url += `&hex1=${hex1}`;
+  if (hex2) url += `&hex2=${hex2}`;
+  if (lat1 !== undefined) url += `&lat1=${lat1}`;
+  if (lng1 !== undefined) url += `&lng1=${lng1}`;
+  if (lat2 !== undefined) url += `&lat2=${lat2}`;
+  if (lng2 !== undefined) url += `&lng2=${lng2}`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || "Failed to compare locations");
+  }
+  return await res.json();
+}

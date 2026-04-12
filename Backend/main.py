@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
@@ -174,45 +174,19 @@ CATEGORY_WEIGHTS = {
     }
 }
 
-@app.get("/api/analyze")
-def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = Depends(get_db)):
-    """
-    Core API endpoint that calculates ML suitability dynamically from PostgreSQL using category weights.
-    """
-    
-    # --- LOGGING TO TERMINAL ---
-    print(f"\n✅ [BACKEND RECEIVED]: Lat: {lat}, Lng: {lng}, Type: {business_type}\n")
-    
-    # 1. Convert specific coordinates to Regional Hex Grid ID
-    h3_index = h3.latlng_to_cell(lat, lng, 8)
-    print("h3_index", h3_index)
-    
-    # 2. Query Machine Learning Data from Database
-    db_data = None
+# Helper to clean up DB floats safely
+def safe_score(val):
     try:
-        cursor = db.cursor(cursor_factory=RealDictCursor)
-        # Note: In the new DB schema, the category name is stored in the 'competition' column
-        cursor.execute("SELECT * FROM business_scores WHERE hex_id = %s AND competition = %s LIMIT 1;", (h3_index, business_type))
-        db_data = cursor.fetchone()
-        
-        if not db_data:
-            # Fallback: Just get ANY row for this hex if exactly this business isn't there
-            cursor.execute("SELECT * FROM business_scores WHERE hex_id = %s LIMIT 1;", (h3_index,))
-            db_data = cursor.fetchone()
-            
-        cursor.close()
-    except Exception as e:
-        print("❌ Database query failed:", e)
+        v = float(val)
+        return int(v * 100) if v <= 1.2 else int(v)
+    except:
+        return 0
 
-    # Helper to clean up DB floats safely
-    def safe_score(val):
-        try:
-            v = float(val)
-            return int(v * 100) if v <= 1.2 else int(v)
-        except:
-            return 0
-
-    # 3. Apply Multi-Layer Weightings
+def _score_from_db_data(db_data, lat=None, lng=None, business_type="other", h3_index=None):
+    """
+    Internal helper to process raw database row into the standard frontend JSON format.
+    """
+    # 1. Apply Multi-Layer Weightings
     if db_data:
         road_pct = safe_score(db_data.get('road_pct', 0))
         pofw_pct = safe_score(db_data.get('pofw_pct', 0))
@@ -221,9 +195,10 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
         poi_pct = safe_score(db_data.get('poi_pct', 0))
         pop_pct = safe_score(db_data.get('population_pct', 0))
         
+        # Determine weights based on business_type
         weights = CATEGORY_WEIGHTS.get(business_type, CATEGORY_WEIGHTS["cafe"])
         
-        # Calculate dynamic final score based on requested weight profile
+        # Calculate dynamic final score
         raw_score = (
             (road_pct * weights.get("road_pct", 0)) +
             (pofw_pct * weights.get("pofw_pct", 0)) +
@@ -231,10 +206,10 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
             (traffic_pct * weights.get("traffic_pct", 0)) +
             (poi_pct * weights.get("poi_pct", 0)) +
             (pop_pct * weights.get("population_pct", 0)) +
-            (50 * weights.get("competition", 0)) # Fixed penalty multiplier against the negative weight
+            (50 * weights.get("competition", 0))
         )
         
-        overall_score = max(0, min(100, int(raw_score))) # Prevent mathematically impossible scores
+        overall_score = max(0, min(100, int(raw_score)))
         
         alternatives = []
         for b_type, b_weights in CATEGORY_WEIGHTS.items():
@@ -250,16 +225,15 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
             b_score = max(0, min(100, int(b_raw)))
             alternatives.append({"type": b_type, "score": b_score})
             
-        # Sort top descending so frontend doesn't have to work as hard
         alternatives = sorted(alternatives, key=lambda x: x["score"], reverse=True)
         
     else:
-        # Emergency Default Fallback Array
+        # Fallback values if no DB data exists
         road_pct = 45; pofw_pct = 45; transport_pct = 45; traffic_pct = 45; poi_pct = 45; pop_pct = 45
         overall_score = 45 
         alternatives = []
 
-    # 4. Map directly to Frontend Format dynamically
+    # 4. Map directly to Frontend Format
     factors = [
         {"label": "Local Population", "icon": "👥", "value": pop_pct},
         {"label": "Road Matrix", "icon": "🛣️", "value": road_pct},
@@ -271,7 +245,7 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
 
     return {
         "location": {"lat": lat, "lng": lng},
-        "h3_index": h3_index,
+        "h3_index": h3_index if h3_index else (db_data.get('hex_id') if db_data else None),
         "business_type": business_type,
         "score": overall_score,
         "factors": factors,
@@ -286,11 +260,120 @@ def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = D
             ]
         },
         "betterLocation": {
-            "lat": lat + 0.005,
-            "lng": lng - 0.005,
+            "lat": (lat + 0.005) if lat else 0,
+            "lng": (lng - 0.005) if lng else 0,
             "score": min(100, overall_score + 10)
         },
         "riskFlags": []
+    }
+
+def _score_location_by_hex(hex_id: str, business_type: str, db):
+    """
+    Queries DB by hex_id and business type, then scores it.
+    """
+    db_data = None
+    try:
+        cursor = db.cursor(cursor_factory=RealDictCursor)
+        # Try finding exact business match first
+        cursor.execute("SELECT * FROM business_scores WHERE hex_id = %s AND competition = %s LIMIT 1;", (hex_id, business_type))
+        db_data = cursor.fetchone()
+        
+        if not db_data:
+            # Fallback: Just get ANY row for this hex if exactly this business isn't there
+            cursor.execute("SELECT * FROM business_scores WHERE hex_id = %s LIMIT 1;", (hex_id,))
+            db_data = cursor.fetchone()
+            
+        cursor.close()
+    except Exception as e:
+        print(f"❌ Database query failed for hex {hex_id}:", e)
+        return None
+
+    if not db_data:
+        return None
+
+    return _score_from_db_data(db_data, business_type=business_type, h3_index=hex_id)
+@app.get("/api/analyze")
+def analyze_location(lat: float, lng: float, business_type: str = "cafe", db = Depends(get_db)):
+    """
+    Core API endpoint that calculates ML suitability dynamically from PostgreSQL.
+    """
+    print(f"\n✅ [BACKEND RECEIVED]: Lat: {lat}, Lng: {lng}, Type: {business_type}\n")
+    
+    # 1. Convert specific coordinates to Regional Hex Grid ID
+    h3_index = h3.latlng_to_cell(lat, lng, 8)
+    
+    # 2. Get data and score
+    result = _score_location_by_hex(h3_index, business_type, db)
+    
+    # 3. If no DB data found, create a placeholder via _score_from_db_data(None)
+    if not result:
+        result = _score_from_db_data(None, lat=lat, lng=lng, business_type=business_type, h3_index=h3_index)
+    else:
+        # Update with actual coordinates for the frontend
+        result["location"] = {"lat": lat, "lng": lng}
+        result["betterLocation"] = {"lat": lat + 0.005, "lng": lng - 0.005, "score": min(100, result["score"] + 10)}
+
+    return result
+
+@app.get("/api/compare")
+def compare_locations(
+    hex1: str = None, 
+    hex2: str = None, 
+    business_type: str = "cafe", 
+    lat1: float = None, 
+    lng1: float = None, 
+    lat2: float = None, 
+    lng2: float = None,
+    db = Depends(get_db)
+):
+    """
+    Compares two locations side-by-side using either H3 hex IDs or lat/lng coordinates.
+    """
+    # Convert lat/lng to hex if provided
+    h1 = hex1
+    h2 = hex2
+    
+    if lat1 is not None and lng1 is not None:
+        h1 = h3.latlng_to_cell(lat1, lng1, 8)
+    if lat2 is not None and lng2 is not None:
+        h2 = h3.latlng_to_cell(lat2, lng2, 8)
+        
+    if not h1 or not h2:
+        raise HTTPException(status_code=400, detail="Missing location identifiers (hex or lat/lng)")
+
+    loc1 = _score_location_by_hex(h1, business_type, db)
+    loc2 = _score_location_by_hex(h2, business_type, db)
+    
+    if not loc1 or not loc2:
+        raise HTTPException(status_code=404, detail="One or both hex_ids not found in database")
+        
+    score_diff = loc1["score"] - loc2["score"]
+    
+    if score_diff > 0:
+        better = "location1"
+    elif score_diff < 0:
+        better = "location2"
+    else:
+        better = "equal"
+        
+    insights = []
+    # Compare each factor one by one
+    for f1, f2 in zip(loc1["factors"], loc2["factors"]):
+        diff = f1["value"] - f2["value"]
+        if diff > 10:
+            insights.append(f"Location 1 has significantly better {f1['label']}")
+        elif diff < -10:
+            insights.append(f"Location 2 has significantly better {f2['label']}")
+
+    return {
+        "location1": loc1,
+        "location2": loc2,
+        "comparison": {
+            "betterLocation": better,
+            "scoreDifference": abs(score_diff),
+            "percentDifference": round(abs(score_diff) / max(loc1["score"], loc2["score"], 1) * 100, 1),
+            "insights": insights if insights else ["Both locations are remarkably similar across key metrics."]
+        }
     }
 
 # To run the development server, type this in the terminal:

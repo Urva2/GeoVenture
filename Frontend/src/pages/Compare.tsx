@@ -9,7 +9,7 @@ import {
   Check, Plus, ArrowLeftRight, Crown,
   Zap, TrendingUp
 } from "lucide-react";
-import { type AnalysisResult, generateAnalysis, BUSINESS_TYPES } from "@/lib/analysis";
+import { type AnalysisResult, compareLocations, BUSINESS_TYPES } from "@/lib/analysis";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -81,16 +81,27 @@ export default function Compare() {
 
     const fetchBoth = async () => {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const a = generateAnalysis(state.locationA[0], state.locationA[1], state.businessType);
-      const b = generateAnalysis(state.locationB[0], state.locationB[1], state.businessType);
-      setAnalysisA(a);
-      setAnalysisB(b);
-      setIsLoading(false);
+      try {
+        const data = await compareLocations(
+          undefined, undefined, state.businessType,
+          state.locationA[0], state.locationA[1],
+          state.locationB[0], state.locationB[1]
+        );
+        setAnalysisA(data.location1);
+        setAnalysisB(data.location2);
+        // Integrate backend insights if available
+        setBackendInsights(data.comparison.insights);
+      } catch (err) {
+        console.error("Failed to fetch comparison data:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchBoth();
   }, [state]);
+
+  const [backendInsights, setBackendInsights] = useState<string[]>([]);
 
   const businessLabel = BUSINESS_TYPES.find(b => b.value === state.businessType)?.label || state.businessType;
   const locALabel = state ? `${state.locationA[0].toFixed(2)}, ${state.locationA[1].toFixed(2)}` : "";
@@ -115,13 +126,29 @@ export default function Compare() {
     if (!analysisA || !analysisB || chartData.length === 0) return { aWins: [], bWins: [], winner: "" };
     const aWins: string[] = [];
     const bWins: string[] = [];
-    chartData.forEach((d: any) => {
-      if (d["Location A"] > d["Location B"]) aWins.push(d.name);
-      else if (d["Location B"] > d["Location A"]) bWins.push(d.name);
+    
+    // Filter backend insights into A and B wins
+    backendInsights.forEach(insight => {
+        if (insight.includes("Location 1")) {
+            const topic = insight.split("better ")[1];
+            if (topic) aWins.push(topic);
+        } else if (insight.includes("Location 2")) {
+            const topic = insight.split("better ")[1];
+            if (topic) bWins.push(topic);
+        }
     });
+
+    // Fallback to frontend comparison if backend insights are empty
+    if (aWins.length === 0 && bWins.length === 0) {
+        chartData.forEach((d: any) => {
+            if (d["Location A"] > d["Location B"] + 10) aWins.push(d.name);
+            else if (d["Location B"] > d["Location A"] + 10) bWins.push(d.name);
+        });
+    }
+
     const winner = analysisA.score > analysisB.score ? "A" : analysisA.score < analysisB.score ? "B" : "Tie";
     return { aWins, bWins, winner };
-  }, [analysisA, analysisB, chartData]);
+  }, [analysisA, analysisB, chartData, backendInsights]);
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-emerald-600";
